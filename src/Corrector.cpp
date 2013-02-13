@@ -40,6 +40,68 @@ Corrector::~Corrector()
 }
 
 //------------------------------------------------------------------------------
+//  Corrector::autoReplace()
+//------------------------------------------------------------------------------
+void Corrector::autoReplace()
+{
+    // For cuneiform
+    replaceAll("â€” ", "— ");
+    replaceAll("â€”", "— ");
+    replaceAll("*", "’");
+    replaceAll(QRegExp("[I1]['’]"), "l’");
+
+    // For tesseract
+    replaceAll("ﬁ", "fi");
+    replaceAll("ﬂ", "fl");
+
+    // Generic
+    replaceAll(QRegExp(". [l1][Il1] "), ". Il ");
+    replaceAll(QRegExp(". I[I1] "), ". Il ");
+    replaceAll(QRegExp(". H "), ". Il ");
+    replaceAll(QRegExp("! H "), "! Il ");
+    replaceAll(QRegExp("? H "), "? Il ");
+    replaceAll(QRegExp("['']"), "’");
+    replaceAll(QRegExp("- "), "");
+    replaceAll(" A ", " À ");
+    replaceAll("\nA", "\nÀ");
+    replaceAll("['’]?", "?");
+    replaceAll(".['’]", ".");
+}
+
+//------------------------------------------------------------------------------
+//  Corrector::detectErrors()
+//------------------------------------------------------------------------------
+QString Corrector::correct(const QString plainText)
+{
+    QString correctedText = plainText;
+
+    // For cuneiform
+    correctedText = correctedText.replace("â€” ", "— ");
+    correctedText = correctedText.replace("â€”", "— ");
+    correctedText = correctedText.replace("*", "’");
+    correctedText = correctedText.replace(QRegExp("[I1]['’]"), "l’");
+
+    // For tesseract
+    correctedText = correctedText.replace("ﬁ", "fi");
+    correctedText = correctedText.replace("ﬂ", "fl");
+
+    // Generic
+    correctedText = correctedText.replace(QRegExp(". [l1][Il1] "), ". Il ");
+    correctedText = correctedText.replace(QRegExp(". I[I1] "), ". Il ");
+    correctedText = correctedText.replace(QRegExp(". H "), ". Il ");
+    correctedText = correctedText.replace(QRegExp("! H "), "! Il ");
+    correctedText = correctedText.replace(QRegExp("? H "), "? Il ");
+    correctedText = correctedText.replace(QRegExp("['']"), "’");
+    correctedText = correctedText.replace(QRegExp("- "), "");
+    correctedText = correctedText.replace(" A ", " À ");
+    correctedText = correctedText.replace("\nA", "\nÀ");
+    correctedText = correctedText.replace("['’]?", "?");
+    correctedText = correctedText.replace(".['’]", ".");
+
+    return correctedText;
+}
+
+//------------------------------------------------------------------------------
 //  Corrector::detectErrors()
 //------------------------------------------------------------------------------
 void Corrector::detectErrors()
@@ -48,29 +110,7 @@ void Corrector::detectErrors()
     {
         QTextCursor cursor = QTextCursor(_document);
 
-        // For cuneiform
-        replaceAll("â€” ", "— ");
-        replaceAll("â€”", "— ");
-        replaceAll("*", "’");
-        replaceAll(QRegExp("[I1]['’]"), "l’");
-
-        // For tesseract
-        replaceAll("ﬁ", "fi");
-        replaceAll("ﬂ", "fl");
-
-        // Generic
-        replaceAll(QRegExp(". [l1][Il1] "), ". Il ");
-        replaceAll(QRegExp(". I[I1] "), ". Il ");
-        replaceAll(QRegExp(". H "), ". Il ");
-        replaceAll(QRegExp("! H "), "! Il ");
-        replaceAll(QRegExp("? H "), "? Il ");
-        replaceAll(QRegExp("['']"), "’");
-        replaceAll(QRegExp("- "), "");
-        replaceAll(" A ", " À ");
-        replaceAll("\nA", "\nÀ");
-        replaceAll("['’]?", "?");
-        replaceAll(".['’]", ".");
-        replaceAll(QRegExp("([a-zA-Z]*)toto([a-zA-Z]*)"), "\1tata\2");
+        autoReplace();
 
         do
         {

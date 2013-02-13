@@ -5,6 +5,7 @@
 
 const QString DialogPreferencesOcr::CUNEIFORM = "Cuneiform";
 const QString DialogPreferencesOcr::TESSERACT = "Tesseract";
+const QString DialogPreferencesOcr::BOTH = "Tesseract + Cuneiform";
 
 //------------------------------------------------------------------------------
 //  DialogPreferencesOcr::~DialogPreferencesOcr()
@@ -25,13 +26,16 @@ DialogPreferencesOcr::DialogPreferencesOcr(QWidget* parent) : QDialog(parent)
     QGroupBox* groupBox = new QGroupBox(tr("OCR engine"), this);
     tesseractButton = new QRadioButton(TESSERACT, groupBox);
     cuneiformButton = new QRadioButton(CUNEIFORM, groupBox);
+    bothButton = new QRadioButton(BOTH, groupBox);
 
     tesseractButton->setChecked(ocrEngine == TESSERACT);
     cuneiformButton->setChecked(ocrEngine == CUNEIFORM);
+    bothButton->setChecked(ocrEngine == BOTH);
 
     QVBoxLayout* vLayout1 = new QVBoxLayout(groupBox);
     vLayout1->addWidget(tesseractButton);
     vLayout1->addWidget(cuneiformButton);
+    vLayout1->addWidget(bothButton);
     // -------------------------------------------------------------------------
 
 
@@ -86,6 +90,8 @@ void DialogPreferencesOcr::accept()
         gConfig->ocrEngine = TESSERACT;
     else if (cuneiformButton->isChecked())
         gConfig->ocrEngine = CUNEIFORM;
+    else if (bothButton->isChecked())
+        gConfig->ocrEngine = BOTH;
 
     // Save Language
     gConfig->ocrLanguage = comboBox->currentText();

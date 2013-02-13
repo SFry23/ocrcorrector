@@ -47,6 +47,12 @@ class Corrector
 
 
     public:
+        /** Automatic substitutions */
+        void autoReplace();
+
+        /** Run correction on a plain text */
+        static QString correct(QString plainText);
+
         /** Find all errors in the document */
         void detectErrors();
 

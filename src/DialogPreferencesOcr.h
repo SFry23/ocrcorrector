@@ -18,7 +18,7 @@ class DialogPreferencesOcr : public QDialog
     // Attributes
     private:
         /** OCR engine selection */
-        QRadioButton *tesseractButton, *cuneiformButton;
+        QRadioButton *tesseractButton, *cuneiformButton, *bothButton;
 
         /** Language selection */
         QComboBox *comboBox;
@@ -26,6 +26,7 @@ class DialogPreferencesOcr : public QDialog
         /** OCR Engines names */
         static const QString TESSERACT;
         static const QString CUNEIFORM;
+        static const QString BOTH;
 
     // Slots
     public slots:

@@ -93,7 +93,12 @@ bool OCR::run(QString inFilename, QString outFilename)
         if (not cmd.isEmpty())
         {
             process.start(cmd);
-            process.waitForFinished(OCR::TIMEOUT);
+
+            if (not process.waitForStarted())
+                return false;
+
+            if (not process.waitForFinished(OCR::TIMEOUT))
+                return false;
 
             if (not process.readAllStandardOutput().isEmpty())
                 return true;
@@ -120,6 +125,8 @@ void OCR::setEngine(QString engineName)
         _engine = TESSERACT;
     else if (engineName == "Cuneiform")
         _engine = CUNEIFORM;
+    else if (engineName == "Tesseract + Cuneiform")
+        _engine = BOTH;
 }
 
 //------------------------------------------------------------------------------
@@ -165,14 +172,21 @@ QString OCR::_generateCommand(QString inFilename, QString outFilename)
         {
             return QString("%1 \"%2\" -o \"%3\" -l %4 -f %5").arg(OCR::CUNEIFORM_CMD, inFilename, outFilename, languageCode, _format);
         }
-        else if (_engine == TESSERACT)
+        else
         {
             // Remove extension (necessary for Tesseract)
             QFileInfo fileInfo(outFilename);
-
             QString outName = fileInfo.path() + "/" + fileInfo.baseName();
 
-            return QString("%1 \"%2\" \"%3\" -l %4 hocr").arg(OCR::TESSERACT_CMD, inFilename, outName, languageCode);
+            if (_engine == TESSERACT)
+            {
+                return QString("%1 \"%2\" \"%3\" -l %4 hocr").arg(OCR::TESSERACT_CMD, inFilename, outName, languageCode);
+            }
+            else if (_engine == BOTH)
+            {
+                QString cmdTesseract = QString("%1 \"%2\" \"%3\" -l %4 hocr").arg(OCR::TESSERACT_CMD, inFilename, outName + "-tess", languageCode);
+                QString cmdCuneiform = QString("%1 \"%2\" -o \"%3\" -l %4 -f %5").arg(OCR::CUNEIFORM_CMD, inFilename, outName + "-cuneiform.html", languageCode, _format);
+            }
         }
     }
 

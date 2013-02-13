@@ -44,10 +44,8 @@ class TextDocument : public QFile
         /** True if current content has been saved in a file, False otherwise */
         bool isSaved();
 
-
         /** Load content from file */
         void loadContent();
-
 
         /** Set current document */
         void setCurrentDocument(QTextDocument* document);

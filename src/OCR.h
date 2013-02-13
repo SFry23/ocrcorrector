@@ -11,7 +11,8 @@ class OCR
         enum Engine
         {
             CUNEIFORM,
-            TESSERACT
+            TESSERACT,
+            BOTH
         };
 
         enum Language

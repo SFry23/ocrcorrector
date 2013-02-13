@@ -103,7 +103,6 @@ Levenshtein::Levenshtein(std::string strA, std::string strB)
     _S = SubstitutionMatrix(200);
 
     //~ _S.read("src/dic/.tesseract-substitution.txt");
-
 }
 
 //------------------------------------------------------------------------------

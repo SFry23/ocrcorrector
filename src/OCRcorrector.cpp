@@ -1,6 +1,4 @@
 #include "OCRcorrector.h"
-#include "Config.h"
-#include "Dictionary.h"
 #include "QStringHtml.h"
 #include "DialogPreferencesOcr.h"
 #include "DialogPreferencesCorrection.h"
@@ -1376,47 +1374,142 @@ void MainWindow::runSingleCorrection()
 //------------------------------------------------------------------------------
 void MainWindow::runSingleOCR()
 {
+    // Waiting message
     statusBar()->showMessage(tr("OCR en cours..."), TIME_MSG);
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
+    // Document
     _documents.setLocked(false);
+    TextDocument* pText = _documents.getTextFile();
 
     // Run OCR engine
     QFile* pImg = _documents.getImageFile();
 
-    if (pImg != 0)
+    if (pImg != 0 and pText != 0)
     {
         // Filenames
         QString imgFileName = pImg->fileName();
-
-        QFileInfo imgInfos(imgFileName);
-        QString textFileName = imgInfos.path() + "/" + imgInfos.baseName() + ".html";
+        QString textFileName = pText->fileName();
 
         // OCR settings
         _ocrManager.setEngine(gConfig->ocrEngine);
         _ocrManager.setLanguage(gConfig->ocrLanguage);
 
-        // Run OCR
-        if (_ocrManager.run(imgFileName, textFileName))
+        // Tesseract + Cuneiform
+        if (_ocrManager.getEngine() == OCR::BOTH)
         {
-            // Change font and font size
-            _ocrManager.postTreat(textFileName, fontbox->currentText(), sizebox->currentText().toInt());
+            QString cuneiformText, tesseractText;
+
+            // Run Tesseract
+            _ocrManager.setEngine(OCR::CUNEIFORM);
+
+            if (_ocrManager.run(imgFileName, textFileName))
+            {
+                // Change font and font size
+                _ocrManager.postTreat(textFileName, fontbox->currentText(), sizebox->currentText().toInt());
+
+                pText->loadContent();
+                cuneiformText = pText->getCurrentDocument()->toPlainText();
+            }
+
+            // Run Cuneiform
+            _ocrManager.setEngine(OCR::TESSERACT);
+
+            if (_ocrManager.run(imgFileName, textFileName))
+            {
+                // Change font and font size
+                _ocrManager.postTreat(textFileName, fontbox->currentText(), sizebox->currentText().toInt());
+
+                pText->loadContent();
+                tesseractText = pText->getCurrentDocument()->toPlainText();
+            }
+
+            // Run correction
+            tesseractText = Corrector::correct(tesseractText);
+            cuneiformText = Corrector::correct(cuneiformText);
+
+            // Align texts
+            QLevenshtein aligner(tesseractText, cuneiformText);
+            QAlignment alignment = aligner.align();
+
+            QString strA = alignment.getStringA();
+            QString strB = alignment.getStringB();
+
+            // Merge
+            QStringList str;
+            int start = 0;
+
+            for (int i = 0; i < strA.size(); i++)
+            {
+                if (strA[i] == ' ' or strB[i] == ' ')
+                {
+                    QString wordA = strA.mid(start, i - start);
+                    QString wordB = strB.mid(start, i - start);
+
+                    if (wordA == wordB)
+                    {
+                        str << wordA;
+                    }
+                    else
+                    {
+                        bool wordAExists = _dictionary->exists(wordA.replace("$", "").toLower());
+                        bool wordBExists = _dictionary->exists(wordB.replace("$", "").toLower());
+
+                        if (wordAExists and not wordBExists)
+                        {
+                            str << wordA.replace("$", "");
+                        }
+                        else if (wordBExists and not wordAExists)
+                        {
+                            str << wordB.replace("$", "");
+                        }
+                        else if (wordAExists and wordBExists)
+                        {
+                            // FIXME
+                            str << wordA.replace("$", "");
+                        }
+                        else
+                        {
+                            if (not wordA.replace("$", "").replace("\n", "").isEmpty() and
+                                not wordB.replace("$", "").replace("\n", "").isEmpty())
+                            {
+                                if (not wordA.contains("$"))
+                                    str << wordA;
+                                else if (not wordB.contains("$"))
+                                    str << wordB;
+                            }
+                        }
+                    }
+
+                    start = i + 1;
+                }
+            }
+
+            pText->setOcrText(str.join(" "));
+            _textEdit->setPlainText(str.join(" "));
+            save();
         }
-    }
+        else
+        {
+            // Run OCR
+            if (_ocrManager.run(imgFileName, textFileName))
+            {
+                // Change font and font size
+                _ocrManager.postTreat(textFileName, fontbox->currentText(), sizebox->currentText().toInt());
 
-    // Display text
-    TextDocument* textDocument = _documents.getTextFile();
+                // Load result
+                pText->loadContent();
+                pText->setOcrText(pText->getCurrentText());
+            }
+        }
 
-    if (textDocument != 0)
-    {
-        textDocument->loadContent();
-        textDocument->setOcrText(textDocument->getCurrentText());
-
+        // Document is already saved in a file
         setSaved();
-
-        emit textChange();
     }
 
+    emit textChange();
+
+    // Ending message
     QApplication::restoreOverrideCursor();
     statusBar()->showMessage(tr("Reconnaissance terminée !"), TIME_MSG);
 }
@@ -1673,7 +1766,7 @@ QString MainWindow::_mergeTexts(DocumentList& documents)
             if (newPart != "")
             {
                 // Delete header
-                newPart = _deleteLines(newPart, 0, 4);
+                newPart = newPart.deleteLines(0, 4);
 
                 if (flagMerge == MERGE_SPACE or flagMerge == MERGE_NO_SPACE)
                 {

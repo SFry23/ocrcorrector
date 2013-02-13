@@ -15,6 +15,9 @@ class Dictionary
         /** Add a word to the Dictionary */
         void add(const QString s);
 
+        /** Check if a string is in the dictionary */
+        bool exists(const QString str);
+
         /** Get path to the Dictionary */
         QString getPath();
 

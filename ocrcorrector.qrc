@@ -1,0 +1,15 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource>
+        <file alias="align_center.png">img/align_center.png</file>
+        <file alias="align_justify.png">img/align_justify.png</file>
+        <file alias="align_left.png">img/align_left.png</file>
+        <file alias="align_right.png">img/align_right.png</file>
+        <file alias="arrow_left.png">img/arrow_left.png</file>
+        <file alias="arrow_right.png">img/arrow_right.png</file>
+        <file alias="bold.png">img/bold.png</file>
+        <file alias="italic.png">img/italic.png</file>
+        <file alias="underline.png">img/underline.png</file>
+        <file alias="lang_en">lang/OCRcorrector_en.qm</file>
+    </qresource>
+</RCC>

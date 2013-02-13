@@ -170,6 +170,58 @@ int Corrector::getNumberErrors()
 }
 
 //------------------------------------------------------------------------------
+//  Corrector::mergeOCRizedTexts()
+//------------------------------------------------------------------------------
+QString Corrector::mergeOCRizedTexts(const QString strA, const QString strB, QSharedPointer<Dictionary> dic)
+{
+    // Run correction
+    Corrector::correct(strA);
+    Corrector::correct(strB);
+
+    // Align strings
+    QLevenshtein aligner(strA, strB);
+    QAlignment alignment = aligner.align();
+
+    QString alignedA = alignment.getStringA();
+    QString alignedB = alignment.getStringB();
+
+    // Merge
+    QStringList validWords;
+
+    int wordStart = 0;
+
+    for (int i = 0; i < alignedA.size(); i++)
+    {
+        if (alignedA[i].isSpace() or alignedB[i].isSpace())
+        {
+            QString wordA = alignedA.mid(wordStart, i - wordStart).replace("$", "");
+            QString wordB = alignedB.mid(wordStart, i - wordStart).replace("$", "");
+
+            if (wordA == wordB)
+            {
+                validWords << wordA;
+            }
+            else
+            {
+                bool wordAExists = dic->exists(wordA.trimmed().toLower());
+                bool wordBExists = dic->exists(wordB.trimmed().toLower());
+
+                if (wordAExists and not wordBExists)
+                    validWords << wordA;
+                else if (wordBExists and not wordAExists)
+                    validWords << wordB;
+                else if (wordAExists and wordBExists)
+                    validWords << wordA;
+            }
+
+            wordStart = i + 1;
+        }
+    }
+
+    return validWords.join(" ");
+}
+
+//------------------------------------------------------------------------------
 //  Corrector::replaceAll()
 //------------------------------------------------------------------------------
 void Corrector::replaceAll(QString before, QString after)

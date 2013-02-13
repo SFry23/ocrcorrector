@@ -73,7 +73,7 @@ class OCR
          *
          *  @return True in case of success, False otherwise.
          */
-        bool run(QString inFilename, QString outFilename);
+        bool run(const QString inFilename, const QString outFilename);
 
         /** Select an OCR engine */
         void setEngine(OCR::Engine ocrEngine);

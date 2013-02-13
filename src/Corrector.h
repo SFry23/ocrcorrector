@@ -7,6 +7,7 @@
 #include "Dictionary.h"
 #include "FileArray.h"
 #include "SubstitutionMatrix.h"
+#include "Utils.h"
 
 
 
@@ -62,6 +63,9 @@ class Corrector
         /** Get highlighting style */
         int getHighlightStyle();
 
+        /** Merge results from two different OCR engines */
+        static QString mergeOCRizedTexts(QString strA, QString strB, QSharedPointer<Dictionary> dic);
+
         /** Get number of corrected errors */
         int getNumberCorrectedErrors();
 
@@ -105,8 +109,6 @@ class Corrector
 
         /** Remove punctuation at the beginning and at the end of <i>str</i> */
         QString _stripPunctuation(QString str);
-
-        QStringList _align(QString str1, QString str2);
 };
 
 int charToNum(const QChar _char);

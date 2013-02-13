@@ -83,7 +83,7 @@ bool OCR::postTreat(QString inFilename, QString font, int fontSize)
 //------------------------------------------------------------------------------
 //  OCR::run()
 //------------------------------------------------------------------------------
-bool OCR::run(QString inFilename, QString outFilename)
+bool OCR::run(const QString inFilename, const QString outFilename)
 {
     if (not inFilename.isEmpty() and not outFilename.isEmpty())
     {
@@ -102,6 +102,10 @@ bool OCR::run(QString inFilename, QString outFilename)
 
             if (not process.readAllStandardOutput().isEmpty())
                 return true;
+        }
+        else
+        {
+            qDebug() << cmd;
         }
     }
 

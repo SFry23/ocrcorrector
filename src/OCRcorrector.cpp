@@ -1270,7 +1270,6 @@ void MainWindow::runGroupOCR()
     // Progression bar
     QProgressBar* progressBar = new QProgressBar(this);
     setStatusTextFilename("");
-    //~ statusBar()->removeWidget(_statusTextFilename);
     statusBar()->addWidget(progressBar);
     progressBar->setRange(0, _documents.size());
 
@@ -1284,38 +1283,78 @@ void MainWindow::runGroupOCR()
         // Change document
         _documents.moveTo(i);
 
-        QFile* pImg = _documents.getImageFile();
+        // OCR settings
+        _ocrManager.setEngine(gConfig->ocrEngine);
+        _ocrManager.setLanguage(gConfig->ocrLanguage);
 
-        if (pImg != 0)
+        QFile* pImg = _documents.getImageFile();
+        TextDocument* pText = _documents.getTextFile();
+
+        if (pImg != 0 and pText != 0)
         {
             // Filenames
             QString imgFileName = pImg->fileName();
+            QString textFileName = pText->fileName();
 
-            QFileInfo imgInfos(imgFileName);
-            QString textFileName = imgInfos.path() + "/" + imgInfos.baseName() + ".html";
-
-            // OCR settings
-            _ocrManager.setEngine(gConfig->ocrEngine);
-            _ocrManager.setLanguage(gConfig->ocrLanguage);
-
-            // Run OCR
-            if (_ocrManager.run(imgFileName, textFileName))
+            if (_ocrManager.getEngine() == OCR::BOTH)
             {
-                // Change font and font size
-                _ocrManager.postTreat(textFileName, fontbox->currentText(), sizebox->currentText().toInt());
+                QString cuneiformText, tesseractText;
 
-                // Load OCRized text
-                TextDocument* document = _documents.getTextFile();
+                // Run Tesseract
+                _ocrManager.setEngine(OCR::CUNEIFORM);
 
-                if (document != 0)
+                if (_ocrManager.run(imgFileName, textFileName))
                 {
-                    document->loadContent();
-                    document->setOcrText(document->getCurrentText());
+                    // Change font and font size
+                    _ocrManager.postTreat(textFileName, fontbox->currentText(), sizebox->currentText().toInt());
+
+                    pText->loadContent();
+                    cuneiformText = pText->getCurrentDocument()->toPlainText();
                 }
+
+                // Run Cuneiform
+                _ocrManager.setEngine(OCR::TESSERACT);
+
+                if (_ocrManager.run(imgFileName, textFileName))
+                {
+                    // Change font and font size
+                    _ocrManager.postTreat(textFileName, fontbox->currentText(), sizebox->currentText().toInt());
+
+                    pText->loadContent();
+                    tesseractText = pText->getCurrentDocument()->toPlainText();
+                }
+
+                QString ocrText = Corrector::mergeOCRizedTexts(tesseractText, cuneiformText, _dictionary);
+
+                pText->setOcrText(ocrText);
+                _textEdit->setPlainText(ocrText);
+                save();
             }
             else
             {
-                qDebug() << "Échec lors de l'OCRisation de " << imgFileName;
+                // OCR settings
+                _ocrManager.setEngine(gConfig->ocrEngine);
+                _ocrManager.setLanguage(gConfig->ocrLanguage);
+
+                // Run OCR
+                if (_ocrManager.run(imgFileName, textFileName))
+                {
+                    // Change font and font size
+                    _ocrManager.postTreat(textFileName, fontbox->currentText(), sizebox->currentText().toInt());
+
+                    // Load OCRized text
+                    TextDocument* document = _documents.getTextFile();
+
+                    if (document != 0)
+                    {
+                        document->loadContent();
+                        document->setOcrText(document->getCurrentText());
+                    }
+                }
+                else
+                {
+                    qDebug() << "Échec lors de l'OCRisation de " << imgFileName;
+                }
             }
         }
         else
@@ -1382,7 +1421,6 @@ void MainWindow::runSingleOCR()
     _documents.setLocked(false);
     TextDocument* pText = _documents.getTextFile();
 
-    // Run OCR engine
     QFile* pImg = _documents.getImageFile();
 
     if (pImg != 0 and pText != 0)
@@ -1424,69 +1462,10 @@ void MainWindow::runSingleOCR()
                 tesseractText = pText->getCurrentDocument()->toPlainText();
             }
 
-            // Run correction
-            tesseractText = Corrector::correct(tesseractText);
-            cuneiformText = Corrector::correct(cuneiformText);
+            QString ocrText = Corrector::mergeOCRizedTexts(tesseractText, cuneiformText, _dictionary);
 
-            // Align texts
-            QLevenshtein aligner(tesseractText, cuneiformText);
-            QAlignment alignment = aligner.align();
-
-            QString strA = alignment.getStringA();
-            QString strB = alignment.getStringB();
-
-            // Merge
-            QStringList str;
-            int start = 0;
-
-            for (int i = 0; i < strA.size(); i++)
-            {
-                if (strA[i] == ' ' or strB[i] == ' ')
-                {
-                    QString wordA = strA.mid(start, i - start);
-                    QString wordB = strB.mid(start, i - start);
-
-                    if (wordA == wordB)
-                    {
-                        str << wordA;
-                    }
-                    else
-                    {
-                        bool wordAExists = _dictionary->exists(wordA.replace("$", "").toLower());
-                        bool wordBExists = _dictionary->exists(wordB.replace("$", "").toLower());
-
-                        if (wordAExists and not wordBExists)
-                        {
-                            str << wordA.replace("$", "");
-                        }
-                        else if (wordBExists and not wordAExists)
-                        {
-                            str << wordB.replace("$", "");
-                        }
-                        else if (wordAExists and wordBExists)
-                        {
-                            // FIXME
-                            str << wordA.replace("$", "");
-                        }
-                        else
-                        {
-                            if (not wordA.replace("$", "").replace("\n", "").isEmpty() and
-                                not wordB.replace("$", "").replace("\n", "").isEmpty())
-                            {
-                                if (not wordA.contains("$"))
-                                    str << wordA;
-                                else if (not wordB.contains("$"))
-                                    str << wordB;
-                            }
-                        }
-                    }
-
-                    start = i + 1;
-                }
-            }
-
-            pText->setOcrText(str.join(" "));
-            _textEdit->setPlainText(str.join(" "));
+            pText->setOcrText(ocrText);
+            _textEdit->setPlainText(ocrText);
             save();
         }
         else

@@ -517,7 +517,6 @@ void MainWindow::displayCurrentImage()
 //------------------------------------------------------------------------------
 void MainWindow::displayCurrentText()
 {
-    // Load file
     TextDocument *textFile = _documents.getTextFile();
 
     if (textFile != 0)
@@ -525,12 +524,18 @@ void MainWindow::displayCurrentText()
         QTextDocument* document = textFile->getCurrentDocument();
 
         if (document == 0)
+        {
             textFile->loadContent();
+        }
         else
+        {
             _textEdit->setDocument(document);
+        }
 
         if (textFile->isSaved())
+        {
             setSaved();
+        }
         else
         {
             setUnsaved();
@@ -1327,8 +1332,11 @@ void MainWindow::runGroupOCR()
                 QString ocrText = Corrector::mergeOCRizedTexts(tesseractText, cuneiformText, _dictionary);
 
                 pText->setOcrText(ocrText);
+
                 _textEdit->setPlainText(ocrText);
                 save();
+
+                pText->loadContent();
             }
             else
             {
@@ -1342,14 +1350,8 @@ void MainWindow::runGroupOCR()
                     // Change font and font size
                     _ocrManager.postTreat(textFileName, fontbox->currentText(), sizebox->currentText().toInt());
 
-                    // Load OCRized text
-                    TextDocument* document = _documents.getTextFile();
-
-                    if (document != 0)
-                    {
-                        document->loadContent();
-                        document->setOcrText(document->getCurrentText());
-                    }
+                    pText->loadContent();
+                    pText->setOcrText(pText->getCurrentText());
                 }
                 else
                 {

@@ -4,9 +4,10 @@
 #include "OCRcorrector.h"
 #include "Resources.h"
 
+
+
 // Program settings
 QSharedPointer<Config> gConfig;
-
 
 
 //------------------------------------------------------------------------------

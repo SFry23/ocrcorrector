@@ -25,10 +25,19 @@ class PushButtonColor : public QPushButton
         QColor _color;
 
     public:
+        /** Colorize the button */
         void colorize();
+
+        /** Get the current color of the button */
         QColor getColor();
+
+        /** Return button ID */
         int getId();
+
+        /** Chnage button color */
         void setColor(QColor color);
+
+        /** Change button ID */
         void setId(int id);
 
     signals:

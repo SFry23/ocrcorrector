@@ -23,7 +23,7 @@ DocumentList::DocumentList()
 //------------------------------------------------------------------------------
 DocumentList::~DocumentList()
 {
-    clear();
+    removeAll();
 }
 
 //------------------------------------------------------------------------------
@@ -49,17 +49,6 @@ void DocumentList::add(QString textFilename, QString imageFilename)
         _images.push_back(new QFile(imageFilename));
     else
         _images.push_back(0);
-}
-
-//------------------------------------------------------------------------------
-//  DocumentList::clear()
-//------------------------------------------------------------------------------
-void DocumentList::clear()
-{
-    _images.clear();
-    _texts.clear();
-
-    _index = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -204,6 +193,26 @@ void DocumentList::previous()
 {
     if (hasPrevious())
         _index--;
+}
+
+//------------------------------------------------------------------------------
+//  DocumentList::removeAll()
+//------------------------------------------------------------------------------
+void DocumentList::removeAll()
+{
+    for (int i = 0; i < size(); i++)
+    {
+        delete _texts[i];
+        delete _images[i];
+
+        _texts[_index] = 0;
+        _images[_index] = 0;
+    }
+
+    _images.clear();
+    _texts.clear();
+
+    _index = 0;
 }
 
 //------------------------------------------------------------------------------

@@ -747,7 +747,7 @@ void MainWindow::close()
         if (not _documents.isLocked())
             _documents.removeCurrent();
         else
-            _documents.clear();
+            _documents.removeAll();
 
         // Unlock document
         _documents.setLocked(false);
@@ -1006,7 +1006,7 @@ void MainWindow::openImages()
             // Keep path as default path
             _defaultPath = filenames[0].left(filenames[0].lastIndexOf("/"));
 
-            _documents.clear();
+            _documents.removeAll();
 
             for (int i = 0; i < filenames.size(); i++)
             {
@@ -1045,7 +1045,7 @@ void MainWindow::openFiles()
         _defaultPath = filenames[0].left(filenames[0].lastIndexOf("/"));
 
         // Remove all current documents
-        _documents.clear();
+        _documents.removeAll();
         _documents.setLocked(false);
 
         // Add all new documents in the list
@@ -1673,7 +1673,7 @@ QString MainWindow::_mergeTexts(DocumentList& documents)
             if (newPart != "")
             {
                 // Delete header
-                newPart = _deleteLines(newPart, 0, 4);
+                newPart = newPart.deleteLines(0, 4);
 
                 if (flagMerge == MERGE_SPACE or flagMerge == MERGE_NO_SPACE)
                 {

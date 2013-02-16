@@ -36,14 +36,8 @@ class DocumentList
         /** Add a document at the end of the list */
         void add(QString textFilename, QString imageFilename);
 
-        /** Clear all documents in the list */
-        void clear();
-
         /** Get the current index of the document list */
         int getIndex();
-
-        /** Get the image count */
-        int size();
 
         /** Get current image file */
         QFile* getImageFile(int position=-1);
@@ -75,6 +69,9 @@ class DocumentList
         /** Go to previous image and previous texts */
         void previous();
 
+        /** Clear all documents in the list */
+        void removeAll();
+
         /** Remove current text file and current image file */
         void removeCurrent();
 
@@ -83,8 +80,11 @@ class DocumentList
 
         /** Set current text filename */
         void setTextFilename(QString filename, int position=-1);
+
+        /** Get the image count */
+        int size();
 };
 
 
-#endif // DocumentList_h
+#endif
 

@@ -64,6 +64,8 @@ MainWindow::MainWindow() : QMainWindow()
 //------------------------------------------------------------------------------
 MainWindow::~MainWindow()
 {
+    _textEdit->setDocument(0);
+
     // Save settings
     gConfig->write();
 
@@ -742,7 +744,7 @@ void MainWindow::close()
     // Ask for saving
     if (maybeSave())
     {
-        _textEdit->setDocument(new QTextDocument(_textEdit));
+        _textEdit->setDocument(0);
 
         if (not _documents.isLocked())
             _documents.removeCurrent();
@@ -1006,6 +1008,7 @@ void MainWindow::openImages()
             // Keep path as default path
             _defaultPath = filenames[0].left(filenames[0].lastIndexOf("/"));
 
+            _textEdit->setDocument(0);
             _documents.removeAll();
 
             for (int i = 0; i < filenames.size(); i++)
@@ -1045,6 +1048,7 @@ void MainWindow::openFiles()
         _defaultPath = filenames[0].left(filenames[0].lastIndexOf("/"));
 
         // Remove all current documents
+        _textEdit->setDocument(0);
         _documents.removeAll();
         _documents.setLocked(false);
 
@@ -1062,6 +1066,7 @@ void MainWindow::openFiles()
 
         // Refresh UI
         emit textChange();
+        emit imageChange();
         emit uiChange();
     }
 }

@@ -15,12 +15,25 @@ const QStringList Corrector::_APOSTROPHE_PREFIXES = QStringList()
 //------------------------------------------------------------------------------
 //  Corrector::Corrector()
 //------------------------------------------------------------------------------
-Corrector::Corrector(QTextDocument* document, QSharedPointer<Dictionary> dic, QSharedPointer<Dictionary> names)
+Corrector::Corrector(QTextDocument* document,
+                     QSharedPointer<Dictionary> dicNouns,
+                     QSharedPointer<Dictionary> dicNames)
 {
     _document = document;
-    _dicNouns = dic;
-    _dicNames = names;
+    _dicNouns = dicNouns;
+    _dicNames = dicNames;
 
+    _document->setHtml(_document->toHtml().trimmed());
+
+    _init();
+}
+
+
+//------------------------------------------------------------------------------
+//  Corrector::_init()
+//------------------------------------------------------------------------------
+void Corrector::_init()
+{
     _highlightStyle = 0;
 
     _colors.append(QColor(Qt::red));
@@ -31,6 +44,7 @@ Corrector::Corrector(QTextDocument* document, QSharedPointer<Dictionary> dic, QS
     _removePageNumber();
     _document->setHtml(_document->toHtml().trimmed());
 }
+
 
 //------------------------------------------------------------------------------
 //  Corrector::~Corrector()
@@ -69,7 +83,7 @@ void Corrector::autoReplace()
 }
 
 //------------------------------------------------------------------------------
-//  Corrector::detectErrors()
+//  Corrector::correct()
 //------------------------------------------------------------------------------
 QString Corrector::correct(const QString plainText)
 {
@@ -97,6 +111,7 @@ QString Corrector::correct(const QString plainText)
     correctedText = correctedText.replace("\nA", "\nÀ");
     correctedText = correctedText.replace("['’]?", "?");
     correctedText = correctedText.replace(".['’]", ".");
+    correctedText = correctedText.replace("- ", "");
 
     return correctedText;
 }
@@ -121,7 +136,7 @@ void Corrector::detectErrors()
                 continue;
             else if (_dicNames != 0 and _dicNames->search(word) != -1)
                 continue;
-            else if (_isValidWithApostrophe(word))
+            else if (_isValidWithApostrophe(word, QList<QSharedPointer<Dictionary> >() << _dicNouns << _dicNames))
                 continue;
             else if (word == "—" or _DOUBLE_PUNCTUATION.contains(word))
                 continue;
@@ -170,9 +185,36 @@ int Corrector::getNumberErrors()
 }
 
 //------------------------------------------------------------------------------
+//  Corrector::isValid()
+//------------------------------------------------------------------------------
+bool Corrector::isValid(QString str, QList<QSharedPointer<Dictionary> >dics)
+{
+    if (not str.isEmpty())
+    {
+        if (str.contains("'") and _isValidWithApostrophe(str, dics))
+        {
+            return true;
+        }
+
+        for (int i = 0; i < dics.size(); i++)
+        {
+            QSharedPointer<Dictionary> dic = dics[i];
+
+            if (not dic.isNull())
+            {
+                if (dic->search(str) != -1)
+                    return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------------
 //  Corrector::mergeOCRizedTexts()
 //------------------------------------------------------------------------------
-QString Corrector::mergeOCRizedTexts(const QString strA, const QString strB, QSharedPointer<Dictionary> dic)
+QString Corrector::mergeOCRizedTexts(const QString strA, const QString strB, QSharedPointer<Dictionary> dic, QSharedPointer<Dictionary> dicNames)
 {
     // Run correction
     Corrector::correct(strA);
@@ -184,6 +226,9 @@ QString Corrector::mergeOCRizedTexts(const QString strA, const QString strB, QSh
 
     QString alignedA = alignment.getStringA();
     QString alignedB = alignment.getStringB();
+
+    qDebug() << alignedA;
+    qDebug() << alignedB;
 
     // Merge
     QStringList validWords;
@@ -197,14 +242,14 @@ QString Corrector::mergeOCRizedTexts(const QString strA, const QString strB, QSh
             QString wordA = alignedA.mid(wordStart, i - wordStart).replace("$", "");
             QString wordB = alignedB.mid(wordStart, i - wordStart).replace("$", "");
 
-            if (wordA == wordB)
+            if (wordA.trimmed() == wordB.trimmed())
             {
                 validWords << wordA;
             }
             else
             {
-                bool wordAExists = dic->exists(wordA.trimmed().toLower());
-                bool wordBExists = dic->exists(wordB.trimmed().toLower());
+                bool wordAExists = isValid(wordA, QList<QSharedPointer<Dictionary> >() << dic << dicNames);
+                bool wordBExists = isValid(wordB, QList<QSharedPointer<Dictionary> >() << dic << dicNames);
 
                 if (wordAExists and not wordBExists)
                     validWords << wordA;
@@ -212,7 +257,17 @@ QString Corrector::mergeOCRizedTexts(const QString strA, const QString strB, QSh
                     validWords << wordB;
                 else if (wordAExists and wordBExists)
                     validWords << wordA;
+                else
+                {
+                    if (wordA.isEmpty() and wordB.contains(QRegExp("[a-zA-Z0-9]")))
+                        validWords << wordB;
+                    else if (wordB.isEmpty() and wordA.contains(QRegExp("[a-zA-Z0-9]")))
+                        validWords << wordA;
+                    else if (not wordA.isEmpty() and not wordB.isEmpty())
+                        validWords << wordA;
+                }
             }
+
 
             wordStart = i + 1;
         }
@@ -305,7 +360,7 @@ bool Corrector::_correctWord(QTextCursor& cursor)
         {
             QString correction = str.replace(0, 1, "l’");
 
-            if (_isValidWithApostrophe(correction))
+            if (_isValidWithApostrophe(correction, QList<QSharedPointer<Dictionary> >() << _dicNouns << _dicNames))
             {
                 _highlight(cursor, _colors[1]);
                 cursor.insertText(correction, cursor.charFormat());
@@ -348,7 +403,7 @@ bool Corrector::_isAlphaNum(const QString& str)
 //------------------------------------------------------------------------------
 //  Corrector::_isValidWithApostrophe()
 //------------------------------------------------------------------------------
-bool Corrector::_isValidWithApostrophe(const QString& str)
+bool Corrector::_isValidWithApostrophe(const QString str,QList<QSharedPointer<Dictionary> >dics)
 {
     const QRegExp APOSTROPHE = QRegExp("['’]");
 
@@ -359,9 +414,15 @@ bool Corrector::_isValidWithApostrophe(const QString& str)
 
         if (_APOSTROPHE_PREFIXES.contains(parts[0].toLower()))
         {
-            if (_dicNouns->search(parts[1]) != -1 or (_dicNames != 0 and _dicNames->search(parts[1]) != -1))
+            for (int i = 0; i < dics.size(); i++)
             {
-                valid = true;
+                QSharedPointer<Dictionary> dic = dics[i];
+
+                if (not dic.isNull())
+                {
+                    if (dic->search(parts[1]) != -1)
+                        valid = true;
+                }
             }
         }
     }

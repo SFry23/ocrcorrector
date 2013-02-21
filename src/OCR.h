@@ -21,7 +21,7 @@ class OCR
             FRENCH
         };
 
-        static const int TIMEOUT = 30000;
+        static const int TIMEOUT = 60000;
         static const QString CUNEIFORM_CMD;
         static const QString TESSERACT_CMD;
 

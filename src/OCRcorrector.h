@@ -36,6 +36,26 @@
 
 #define TIME_MSG 2000
 
+/******************************************************************************/
+class Word
+{
+    public:
+        Word(QString str, bool isItalic, bool isNewLine);
+        ~Word();
+
+    private:
+        QString _str;
+        bool _italic;
+        bool _newLine;
+
+    public:
+        QString getString();
+        bool isItalic();
+        bool isNewLine();
+};
+/******************************************************************************/
+
+
 
 // Software Configuration
 extern QSharedPointer<Config> gConfig;

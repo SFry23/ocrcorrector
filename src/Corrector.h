@@ -15,7 +15,9 @@ class Corrector
 {
     // Constructor and Destructor
     public:
-        Corrector(QTextDocument* document, QSharedPointer<Dictionary> dic, QSharedPointer<Dictionary> names=0);
+        Corrector(QTextDocument* document, QSharedPointer<Dictionary> dic,
+                                           QSharedPointer<Dictionary> dicNames);
+
         ~Corrector();
 
     private:
@@ -63,8 +65,11 @@ class Corrector
         /** Get highlighting style */
         int getHighlightStyle();
 
+        /** Check if a word is valid */
+        static bool isValid(const QString str, QList<QSharedPointer<Dictionary> >dics);
+
         /** Merge results from two different OCR engines */
-        static QString mergeOCRizedTexts(QString strA, QString strB, QSharedPointer<Dictionary> dic);
+        static QString mergeOCRizedTexts(QString strA, QString strB, QSharedPointer<Dictionary> dic, QSharedPointer<Dictionary> dicNouns=QSharedPointer<Dictionary>(0));
 
         /** Get number of corrected errors */
         int getNumberCorrectedErrors();
@@ -95,11 +100,14 @@ class Corrector
         /** Highlight text in the document */
         void _highlight(QTextCursor& cursor, QColor color);
 
+        /** Init corrector */
+        void _init();
+
         /** Check if a word is alpha numeric */
         bool _isAlphaNum(const QString& str);
 
         /** Check if a word with an apostrophe is valid */
-        bool _isValidWithApostrophe(const QString& str);
+        static bool _isValidWithApostrophe(const QString str, QList<QSharedPointer<Dictionary> >dics);
 
         /** Remove all images */
         void _removeImages();
@@ -112,5 +120,7 @@ class Corrector
 };
 
 int charToNum(const QChar _char);
+
+
 
 #endif

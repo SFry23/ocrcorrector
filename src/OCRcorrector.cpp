@@ -1369,19 +1369,19 @@ void MainWindow::runGroupCorrection()
         _textEdit->removeUnderline();
         _textEdit->removeHighlight();
 
-        Corrector* corrector = new Corrector(_textEdit->document(), _dictionary, _dictionaryNames);
+        Corrector* corrector = new Corrector(_dictionary, _dictionaryNames);
         corrector->setColors(gConfig->colorError, gConfig->colorCorrected, gConfig->colorReplace);
         corrector->setHighlightStyle(gConfig->highlightStyle);
 
 
         if (corrector != 0)
         {
+            QTextDocument* document = _textEdit->document();
+
             // Find and correct errors
-            corrector->detectErrors();
+            corrector->correct(document);
 
-            _textEdit->setDocument(corrector->getDocument());
-
-            _documents.getTextFile()->setCurrentDocument(corrector->getDocument());
+            _documents.getTextFile()->setCurrentDocument(document);
             _documents.getTextFile()->setSaved(false);
 
             delete corrector;
@@ -1529,19 +1529,18 @@ void MainWindow::runSingleCorrection()
     _textEdit->removeUnderline();
     _textEdit->removeHighlight();
 
-    Corrector* corrector = new Corrector(_textEdit->document(), _dictionary, _dictionaryNames);
+    Corrector* corrector = new Corrector(_dictionary, _dictionaryNames);
 
     if (corrector != 0)
     {
+        QTextDocument* document = _textEdit->document();
+
         // Corrector settings
         corrector->setColors(gConfig->colorError, gConfig->colorCorrected, gConfig->colorReplace);
         corrector->setHighlightStyle(gConfig->highlightStyle);
 
         // Find and correct errors
-        corrector->detectErrors();
-
-        // Display corrected text
-        _textEdit->setDocument(corrector->getDocument());
+        corrector->correct(document);
 
         delete corrector;
     }

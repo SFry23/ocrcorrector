@@ -44,6 +44,7 @@ DialogPreferencesOcr::DialogPreferencesOcr(QWidget* parent) : QDialog(parent)
 
     QStringList languages = QStringList();
     languages << "Français";
+    languages << "English";
 
     comboBox->insertItems(0, languages);
     comboBox->setCurrentIndex(languages.indexOf(lang));

@@ -90,6 +90,8 @@ bool OCR::run(QString inFilename, QString outFilename)
         QProcess process;
         QString cmd = _generateCommand(inFilename, outFilename);
 
+        qDebug() << cmd;
+
         if (not cmd.isEmpty())
         {
             process.start(cmd);
@@ -186,7 +188,7 @@ QString OCR::_generateLanguageCode(OCR::Language language)
 {
     QMap<OCR::Language, QString> languageCodes;
 
-    languageCodes[ENGLISH] = "en";
+    languageCodes[ENGLISH] = "eng";
     languageCodes[FRENCH] = "fra";
 
     return languageCodes.value(language);

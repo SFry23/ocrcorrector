@@ -14,30 +14,28 @@ class Corrector
 {
     // Constructor and Destructor
     public:
-        Corrector(QTextDocument* document, QSharedPointer<Dictionary> dic, QSharedPointer<Dictionary> names=0);
+        Corrector(QSharedPointer<Dictionary> dic, QSharedPointer<Dictionary> names=0);
         ~Corrector();
 
     private:
-        /** Document to be corrected */
-        QTextDocument* _document;
-
         /** Dictionary used for correction*/
         QSharedPointer<Dictionary> _dicNouns;
 
         /** Dictionary of proper nouns */
         QSharedPointer<Dictionary> _dicNames;
 
-        /** Errors and corrections highlighting style */
+        /** Errors and corrections highlighting style
+         *  0 : Underline
+         *  1 : Highlight
+         */
         int _highlightStyle;
 
-        /** Colors */
+        /** Colors for correction
+         *  0 : uncorrected error
+         *  1 : format correction
+         *  2 : corrected error
+         */
         QList<QColor> _colors;
-
-        /** Number of errors */
-        int _nErrors;
-
-        /** Number of corrected errors */
-        int _nCorrectedErrors;
 
 
         // Constants
@@ -48,24 +46,18 @@ class Corrector
 
     public:
         /** Find all errors in the document */
-        void detectErrors();
-
-        /** Get the corrected document */
-        QTextDocument* getDocument();
+        void correct(QTextDocument* document);
 
         /** Get highlighting style */
         int getHighlightStyle();
 
-        /** Get number of corrected errors */
-        int getNumberCorrectedErrors();
-
-        /** Get number of errors */
-        int getNumberErrors();
+        /** Get colors used for correction */
+        QList<QColor> getColors();
 
         /** Replace all occurrences of <i>before</i> with <i>after</i>
-          * and unerline modifications */
-        void replaceAll(QString before, QString after);
-        void replaceAll(QRegExp before, QString after);
+          * and highlight modifications */
+        void replaceAll(QTextDocument* document, QString before, QString after);
+        void replaceAll(QTextDocument* document, QRegExp before, QString after);
 
         /** Change colors */
         void setColors(QColor colorError, QColor colorCorrected, QColor colorFormatting);
@@ -73,9 +65,9 @@ class Corrector
         /** Change highlighting style */
         void setHighlightStyle(int highlightStyle);
 
-        //~ void _createSubsitutionMatrixFrom(QString filename);
-
     private:
+        void autoReplace(QTextDocument* document);
+
         /** Correct the word under the cursor */
         bool _correctWord(QTextCursor& cursor);
 
@@ -92,14 +84,15 @@ class Corrector
         bool _isValidWithApostrophe(const QString& str);
 
         /** Remove all images */
-        void _removeImages();
+        void _removeImages(QTextDocument* document);
 
         /** Remove page number at the end of the document */
-        void _removePageNumber();
+        void _removePageNumber(QTextDocument* document);
 
         /** Remove punctuation at the beginning and at the end of <i>str</i> */
         QString _stripPunctuation(QString str);
 
+        /** Align two strings*/
         QStringList _align(QString str1, QString str2);
 };
 

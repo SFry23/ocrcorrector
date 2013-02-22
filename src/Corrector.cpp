@@ -10,8 +10,6 @@ Corrector::Corrector(QSharedPointer<Dictionary> dicNouns,
     _dicNouns = dicNouns;
     _dicNames = dicNames;
 
-    _document->setHtml(_document->toHtml().trimmed());
-
     _init();
 }
 
@@ -111,7 +109,7 @@ void Corrector::correct(QTextDocument* document)
             cursor.select(QTextCursor::WordUnderCursor);
             QString word = cursor.selectedText();
 
-            if (not _isValid(word))
+            if (not isValid(word))
             {
                 // Highlight errors
                 _highlight(cursor, _colors[0]);
@@ -121,6 +119,48 @@ void Corrector::correct(QTextDocument* document)
     }
 }
 
+//------------------------------------------------------------------------------
+//  Corrector::correct()
+//------------------------------------------------------------------------------
+QString Corrector::correct(const QString str)
+{
+    QString correction = str;
+
+    QTextDocument* document = new QTextDocument();
+
+    if (document != 0)
+    {
+        document->setHtml(correction);
+
+        _removeImages(document);
+        _removePageNumber(document);
+        _removePunctuationInsideWords(document);
+
+        autoReplace(document);
+
+        if (document != 0 and _dicNouns != 0)
+        {
+            QTextCursor cursor = QTextCursor(document);
+
+            do
+            {
+                cursor.select(QTextCursor::WordUnderCursor);
+                QString word = cursor.selectedText();
+
+                if (not isValid(word))
+                {
+                }
+            }
+            while (cursor.movePosition(QTextCursor::NextWord));
+        }
+
+        correction = document->toHtml();
+
+        delete document;
+    }
+
+    return correction;
+}
 //------------------------------------------------------------------------------
 //  Corrector::getColors()
 //------------------------------------------------------------------------------
@@ -140,11 +180,11 @@ int Corrector::getHighlightStyle()
 //------------------------------------------------------------------------------
 //  Corrector::mergeOCRizedTexts()
 //------------------------------------------------------------------------------
-QString Corrector::mergeOCRizedTexts(const QString strA, const QString strB, QSharedPointer<Dictionary> dic, QSharedPointer<Dictionary> dicNames)
+QString Corrector::mergeOCRizedTexts(const QString strA, const QString strB)
 {
     // Run correction
-    Corrector::correct(strA);
-    Corrector::correct(strB);
+    correct(strA);
+    correct(strB);
 
     // Align strings
     QLevenshtein aligner(strA, strB);
@@ -174,8 +214,8 @@ QString Corrector::mergeOCRizedTexts(const QString strA, const QString strB, QSh
             }
             else
             {
-                bool wordAExists = isValid(wordA, QList<QSharedPointer<Dictionary> >() << dic << dicNames);
-                bool wordBExists = isValid(wordB, QList<QSharedPointer<Dictionary> >() << dic << dicNames);
+                bool wordAExists = isValid(wordA);
+                bool wordBExists = isValid(wordB);
 
                 if (wordAExists and not wordBExists)
                     validWords << wordA;
@@ -310,7 +350,7 @@ bool Corrector::_correctWord(QTextCursor& cursor)
         {
             QString correction = str.replace(0, 1, "l’");
 
-            if (_isValidWithApostrophe(correction, QList<QSharedPointer<Dictionary> >() << _dicNouns << _dicNames))
+            if (_isValidWithApostrophe(correction))
             {
                 _highlight(cursor, _colors[1]);
                 cursor.insertText(correction, cursor.charFormat());
@@ -351,9 +391,9 @@ bool Corrector::_isAlphaNum(const QString str)
 }
 
 //------------------------------------------------------------------------------
-//  Corrector::_isValid()
+//  Corrector::isValid()
 //------------------------------------------------------------------------------
-bool Corrector::_isValid(const QString str)
+bool Corrector::isValid(const QString str)
 {
     if (_dicNouns != 0)
     {
@@ -434,7 +474,7 @@ void Corrector::_removePunctuationInsideWords(QTextDocument* document, bool high
         QString str = cursor.selectedText();
         QString newStr = str.replace(toFind, "\\1\\2");
 
-        if (_isValid(newStr))
+        if (isValid(newStr))
         {
             QTextCharFormat format = cursor.charFormat();
 

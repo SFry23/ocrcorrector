@@ -43,7 +43,7 @@ class Corrector
 
     public:
         /** Run correction on a plain text */
-        static QString correct(QString plainText);
+        QString correct(QString plainText);
 
         /** Auto replace to correct OCR errors */
         void autoReplace(QTextDocument* document, bool highlight=true);
@@ -52,7 +52,7 @@ class Corrector
         void correct(QTextDocument* document);
 
         /** Merge results from two different OCR engines */
-        static QString mergeOCRizedTexts(QString strA, QString strB, QSharedPointer<Dictionary> dic, QSharedPointer<Dictionary> dicNouns=QSharedPointer<Dictionary>(0));
+        QString mergeOCRizedTexts(QString strA, QString strB);
 
         /** Get colors used for correction */
         QList<QColor> getColors();
@@ -91,7 +91,7 @@ class Corrector
         bool _isAlphaNum(const QString str);
 
         /** Check if a word is valid */
-        bool _isValid(const QString str);
+        bool isValid(const QString str);
 
         /** Check if a word with an apostrophe is valid */
 

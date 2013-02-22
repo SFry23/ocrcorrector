@@ -720,7 +720,8 @@ void MainWindow::refreshMenu()
     run_gocr->setEnabled(_documents.size() > 1 and mdi->isChecked());
 
     // Enable or disable correction
-    _runGroupCorr->setEnabled(_documents.size() > 1);
+    _runCorr->setEnabled(gConfig->ocrLanguage == "Français");
+    _runGroupCorr->setEnabled(_documents.size() > 1 and gConfig->ocrLanguage == "Français");
 
     // Enable or disable 'merge' button
     merge->setEnabled(_documents.size() > 1);

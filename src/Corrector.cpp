@@ -1,29 +1,27 @@
 #include "Corrector.h"
 
 
-
-
-// Constants
-const QStringList Corrector::_SIMPLE_PUNCTUATION = QStringList() << "." << "…" << ";" << "," << ")" << ":";
-const QStringList Corrector::_DOUBLE_PUNCTUATION = QStringList() << "?" << "!" << ":" << "»";
-const QStringList Corrector::_APOSTROPHE_PREFIXES = QStringList()
-        << "c" << "ç" << "d" << "j" << "l" << "m" << "n" << "qu" << "s" << "t" \
-        << "quoiqu" << "lorsqu" << "jusqu" << "puisqu";
-
-
 //------------------------------------------------------------------------------
 //  Corrector::Corrector()
 //------------------------------------------------------------------------------
-Corrector::Corrector(QSharedPointer<Dictionary> dic, QSharedPointer<Dictionary> names)
+Corrector::Corrector(QSharedPointer<Dictionary> dicNouns,
+                     QSharedPointer<Dictionary> dicNames)
 {
-    _dicNouns = dic;
-    _dicNames = names;
+    _dicNouns = dicNouns;
+    _dicNames = dicNames;
 
     _highlightStyle = 0;
 
     _colors.append(QColor(Qt::red));
     _colors.append(QColor(Qt::green));
     _colors.append(QColor(Qt::cyan));
+
+    // Constants
+    _simplePonctuation = QStringList() << "." << "…" << ";" << "," << ")" << ":";
+    _doublePonctuation = QStringList() << "?" << "!" << ":" << "»";
+    _apostrophePrefixes = QStringList() << "c" << "ç" << "d" << "j" << "l" << "m" << "n" \
+                        << "qu" << "s" << "t" << "quoiqu" << "lorsqu" \
+                        << "jusqu" << "puisqu";
 }
 
 //------------------------------------------------------------------------------
@@ -36,7 +34,7 @@ Corrector::~Corrector()
 //------------------------------------------------------------------------------
 //  Corrector::autoReplace()
 //------------------------------------------------------------------------------
-void Corrector::autoReplace(QTextDocument* document)
+void Corrector::autoReplace(QTextDocument* document, bool highlight)
 {
     // Substitutions of simple strings
     QMap<QString, QString> simpleRules;
@@ -46,6 +44,7 @@ void Corrector::autoReplace(QTextDocument* document)
     simpleRules.insert("*", "’");
     simpleRules.insert("â€” ", "— ");
     simpleRules.insert("A ", "À ");
+    simpleRules.insert("oeil", "œil");
 
     // Substitutions with regular expressions
     QMap<QString, QString> regexRules;
@@ -54,24 +53,28 @@ void Corrector::autoReplace(QTextDocument* document)
     regexRules.insert("([\\.!\\?]) [l1][Il1] ", "\\1 Il ");
     regexRules.insert("([\\.!\\?]) I[I1] ", "\\1 Il ");
     regexRules.insert("([\\.!\\?]) H(s?) ", "\\1 Il\\2 ");
+    regexRules.insert("^H(s?) ", "Il\\1 ");
     regexRules.insert("([eE])He(s?) ", "\\1lle\\2 ");
     regexRules.insert("['']", "’");
     regexRules.insert("- ", "");
     regexRules.insert("['’]\\?", "?");
     regexRules.insert("\\.['’]", ".");
+    regexRules.insert("(\\w)—(\\w)", "\\1-\\2");
+    regexRules.insert("([!\\?\\.:]\\s?)— ", "\\1\n— ");
+    regexRules.insert("([\\w])([!\\?])", "\\1 \\2");
 
 
     QMap<QString, QString>::const_iterator it = simpleRules.constBegin();
     while (it != simpleRules.constEnd())
     {
-        replaceAll(document, it.key(), it.value());
+        replaceAll(document, it.key(), it.value(), highlight);
         ++it;
     }
 
     it = regexRules.constBegin();
     while (it != regexRules.constEnd())
     {
-        replaceAll(document, QRegExp(it.key()), it.value());
+        replaceAll(document, QRegExp(it.key()), it.value(), highlight);
         ++it;
     }
 }
@@ -84,10 +87,11 @@ void Corrector::correct(QTextDocument* document)
     _removeImages(document);
     _removePageNumber(document);
 
+    autoReplace(document);
+    _removePunctuationInsideWords(document);
+
     if (document != 0 and _dicNouns != 0)
     {
-        autoReplace(document);
-
         QTextCursor cursor = QTextCursor(document);
 
         do
@@ -95,17 +99,7 @@ void Corrector::correct(QTextDocument* document)
             cursor.select(QTextCursor::WordUnderCursor);
             QString word = cursor.selectedText();
 
-            if (_dicNouns->search(word.toLower()) != -1)
-                continue;
-            else if (_dicNames != 0 and _dicNames->search(word) != -1)
-                continue;
-            else if (_isValidWithApostrophe(word))
-                continue;
-            else if (word == "—" or _DOUBLE_PUNCTUATION.contains(word))
-                continue;
-            else if (_correctWord(cursor))
-                continue;
-            else
+            if (not _isValid(word))
             {
                 // Highlight errors
                 _highlight(cursor, _colors[0]);
@@ -134,27 +128,30 @@ int Corrector::getHighlightStyle()
 //------------------------------------------------------------------------------
 //  Corrector::replaceAll()
 //------------------------------------------------------------------------------
-void Corrector::replaceAll(QTextDocument* document, QString before, QString after)
+void Corrector::replaceAll(QTextDocument* document, QString before, QString after, bool highlight)
 {
     QTextCursor cursor = document->find(before, 0, QTextDocument::FindCaseSensitively);
     while (not cursor.isNull())
     {
-        cursor.insertText(after);
+        QString str = cursor.selectedText();
+        QString newStr = str.replace(before, after);
 
-        // Apply format
-        cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::KeepAnchor, after.size());
-        cursor.select(QTextCursor::WordUnderCursor);
-        _highlight(cursor, _colors[2]);
+        QTextCharFormat format = cursor.charFormat();
+
+        if (highlight)
+            format = _getHighlightFormat(format, _colors[2]);
+
+        cursor.insertText(newStr, format);
 
         // Find next occurrence
-        cursor = document->find(before, cursor.position(), QTextDocument::FindCaseSensitively);
+        cursor = document->find(before, cursor, QTextDocument::FindCaseSensitively);
     }
 }
 
 //------------------------------------------------------------------------------
 //  Corrector::replaceAll()
 //------------------------------------------------------------------------------
-void Corrector::replaceAll(QTextDocument* document, QRegExp before, QString after)
+void Corrector::replaceAll(QTextDocument* document, QRegExp before, QString after, bool highlight)
 {
     QTextCursor cursor = document->find(before);
 
@@ -165,25 +162,36 @@ void Corrector::replaceAll(QTextDocument* document, QRegExp before, QString afte
 
         QTextCharFormat format = cursor.charFormat();
 
-        if (_highlightStyle == 0)
-        {
-            format.setUnderlineStyle(QTextCharFormat::SingleUnderline);
-            format.setUnderlineColor(_colors[2]);
-        }
-        else if (_highlightStyle == 1)
-        {
-            format.setBackground(QBrush(_colors[2]));
-        }
+        if (highlight)
+            format = _getHighlightFormat(format, _colors[2]);
 
         cursor.insertText(newStr, format);
 
-        // Replace text
-        format = cursor.charFormat();
-
         // Find next occurrence
-        cursor = document->find(before, cursor.position(), QTextDocument::FindCaseSensitively);
+        cursor = document->find(before, cursor);
     }
 }
+
+//------------------------------------------------------------------------------
+//  Corrector::_getHighlightFormat()
+//------------------------------------------------------------------------------
+QTextCharFormat Corrector::_getHighlightFormat(const QTextCharFormat format, const QColor color)
+{
+    QTextCharFormat hlFormat = format;
+
+    if (_highlightStyle == 0)
+    {
+        hlFormat.setUnderlineStyle(QTextCharFormat::SingleUnderline);
+        hlFormat.setUnderlineColor(color);
+    }
+    else if (_highlightStyle == 1)
+    {
+        hlFormat.setBackground(QBrush(color));
+    }
+
+    return hlFormat;
+}
+
 
 //------------------------------------------------------------------------------
 //  Corrector::setColors()
@@ -216,7 +224,7 @@ bool Corrector::_correctWord(QTextCursor& cursor)
 
     if (not str.isNull())
     {
-        if (not _isAlphaNum(str) and not _DOUBLE_PUNCTUATION.contains(str))
+        if (not _isAlphaNum(str) and not _doublePonctuation.contains(str))
         {
             cursor.removeSelectedText();
         }
@@ -240,13 +248,13 @@ bool Corrector::_correctWord(QTextCursor& cursor)
 //------------------------------------------------------------------------------
 //  Corrector::_highlight()
 //------------------------------------------------------------------------------
-void Corrector::_highlight(QTextCursor& cursor, QColor color)
+void Corrector::_highlight(QTextCursor& cursor, const QColor color)
 {
     QTextCharFormat format = cursor.charFormat();
 
     if (_highlightStyle == 0)
     {
-        format.setUnderlineStyle(QTextCharFormat::SingleUnderline);
+        format.setUnderlineStyle(QTextCharFormat::SpellCheckUnderline);
         format.setUnderlineColor(color);
     }
     else if (_highlightStyle == 1)
@@ -260,15 +268,35 @@ void Corrector::_highlight(QTextCursor& cursor, QColor color)
 //------------------------------------------------------------------------------
 //  Corrector::_isValidWithApostrophe()
 //------------------------------------------------------------------------------
-bool Corrector::_isAlphaNum(const QString& str)
+bool Corrector::_isAlphaNum(const QString str)
 {
     return str.contains(QRegExp("[a-zA-Z0-9]"));
 }
 
 //------------------------------------------------------------------------------
+//  Corrector::_isValid()
+//------------------------------------------------------------------------------
+bool Corrector::_isValid(const QString str)
+{
+    if (_dicNouns != 0)
+    {
+        if (_dicNouns->search(str.toLower()) != -1)
+            return true;
+        else if (_dicNames != 0 and _dicNames->search(str) != -1)
+            return true;
+        else if (_isValidWithApostrophe(str))
+            return true;
+        else if (str == "—" or _doublePonctuation.contains(str))
+            return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------------
 //  Corrector::_isValidWithApostrophe()
 //------------------------------------------------------------------------------
-bool Corrector::_isValidWithApostrophe(const QString& str)
+bool Corrector::_isValidWithApostrophe(const QString str)
 {
     const QRegExp APOSTROPHE = QRegExp("['’]");
 
@@ -277,12 +305,12 @@ bool Corrector::_isValidWithApostrophe(const QString& str)
     {
         QStringList parts = str.split(APOSTROPHE);
 
-        if (_APOSTROPHE_PREFIXES.contains(parts[0].toLower()))
+        if (_apostrophePrefixes.contains(parts[0], Qt::CaseInsensitive))
         {
-            if (_dicNouns->search(parts[1]) != -1 or (_dicNames != 0 and _dicNames->search(parts[1]) != -1))
-            {
+            if (_dicNouns != 0 and _dicNouns->search(parts[1]) != -1)
                 valid = true;
-            }
+            else if (_dicNames != 0 and _dicNames->search(parts[1]) != -1)
+                valid = true;
         }
     }
 
@@ -317,14 +345,40 @@ void Corrector::_removePageNumber(QTextDocument* document)
 }
 
 //------------------------------------------------------------------------------
-//  Corrector::_stripPunctuation()
+//  Corrector::_removePageNumber()
 //------------------------------------------------------------------------------
-QString Corrector::_stripPunctuation(QString str)
+void Corrector::_removePunctuationInsideWords(QTextDocument* document, bool highlight)
 {
-    while (_SIMPLE_PUNCTUATION.contains(str.right(1)))
-        str.truncate(str.size() - 1);
+    QRegExp toFind = QRegExp("(\\w)[!\\?\\.\\,](\\w)");
 
-    return str;
+    QTextCursor cursor = document->find(toFind, 0, QTextDocument::FindCaseSensitively);
+    while (not cursor.isNull())
+    {
+        QString str = cursor.selectedText();
+        QString newStr = str.replace(toFind, "\\1\\2");
+
+        if (_isValid(newStr))
+        {
+            QTextCharFormat format = cursor.charFormat();
+
+            if (highlight)
+            {
+                if (_highlightStyle == 0)
+                {
+                    format.setUnderlineStyle(QTextCharFormat::SingleUnderline);
+                    format.setUnderlineColor(_colors[1]);
+                }
+                else if (_highlightStyle == 1)
+                {
+                    format.setBackground(QBrush(_colors[1]));
+                }
+            }
+
+            cursor.insertText(newStr, format);
+        }
+
+        // Find next occurrence
+        cursor = document->find(toFind, cursor.position(), QTextDocument::FindCaseSensitively);
+    }
 }
-
 

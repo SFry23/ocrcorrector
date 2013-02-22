@@ -1469,7 +1469,9 @@ void MainWindow::runGroupOCR()
 
                 //~ QList<Word> = _getWords(cuneiformHtml);
 
-                QString ocrText = Corrector::mergeOCRizedTexts(tesseractText, cuneiformText, _dictionary);
+                Corrector corrector(_dictionary, _dictionaryNames);
+
+                QString ocrText = corrector.mergeOCRizedTexts(tesseractText, cuneiformText);
 
                 pText->setOcrText(ocrText);
 
@@ -1657,14 +1659,14 @@ void MainWindow::runSingleOCR()
                 //~ }
             }
 
-            cuneiformHtml = Corrector::correct(cuneiformHtml) + "</p>";
-            tesseractHtml = Corrector::correct(tesseractHtml) + "</p>";
+            Corrector corrector(_dictionary, _dictionaryNames);
+            cuneiformHtml = corrector.correct(cuneiformHtml) + "</p>";
+            tesseractHtml = corrector.correct(tesseractHtml) + "</p>";
 
             qDebug() << cuneiformHtml;
             qDebug() << tesseractHtml;
 
-
-            QString ocrText = Corrector::mergeOCRizedTexts(tesseractHtml, cuneiformHtml, _dictionary);
+            QString ocrText = corrector.mergeOCRizedTexts(tesseractHtml, cuneiformHtml);
 
             pText->setOcrText(ocrText);
             _textEdit->setHtml(ocrText);

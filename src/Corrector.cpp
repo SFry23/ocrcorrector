@@ -92,13 +92,13 @@ void Corrector::autoReplace(QTextDocument* document, bool highlight)
 //------------------------------------------------------------------------------
 //  Corrector::correct()
 //------------------------------------------------------------------------------
-void Corrector::correct(QTextDocument* document)
+void Corrector::correct(QTextDocument* document, bool highlight)
 {
     _removeImages(document);
     _removePageNumber(document);
-
-    autoReplace(document);
     _removePunctuationInsideWords(document);
+
+    autoReplace(document, highlight);
 
     if (document != 0 and _dicNouns != 0)
     {
@@ -111,8 +111,11 @@ void Corrector::correct(QTextDocument* document)
 
             if (not isValid(word))
             {
-                // Highlight errors
-                _highlight(cursor, _colors[0]);
+                if (highlight)
+                {
+                    // Highlight errors
+                    _highlight(cursor, _colors[0]);
+                }
             }
         }
         while (cursor.movePosition(QTextCursor::NextWord));
@@ -132,27 +135,7 @@ QString Corrector::correct(const QString str)
     {
         document->setHtml(correction);
 
-        _removeImages(document);
-        _removePageNumber(document);
-        _removePunctuationInsideWords(document);
-
-        autoReplace(document);
-
-        if (document != 0 and _dicNouns != 0)
-        {
-            QTextCursor cursor = QTextCursor(document);
-
-            do
-            {
-                cursor.select(QTextCursor::WordUnderCursor);
-                QString word = cursor.selectedText();
-
-                if (not isValid(word))
-                {
-                }
-            }
-            while (cursor.movePosition(QTextCursor::NextWord));
-        }
+        correct(document, false);
 
         correction = document->toHtml();
 
@@ -192,9 +175,6 @@ QString Corrector::mergeOCRizedTexts(const QString strA, const QString strB)
 
     QString alignedA = alignment.getStringA();
     QString alignedB = alignment.getStringB();
-
-    qDebug() << alignedA;
-    qDebug() << alignedB;
 
     // Merge
     QStringList validWords;

@@ -49,7 +49,7 @@ class Corrector
         void autoReplace(QTextDocument* document, bool highlight=true);
 
         /** Find all errors in the document */
-        void correct(QTextDocument* document);
+        void correct(QTextDocument* document, bool highlight=true);
 
         /** Merge results from two different OCR engines */
         QString mergeOCRizedTexts(QString strA, QString strB);

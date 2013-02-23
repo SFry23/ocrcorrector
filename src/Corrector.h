@@ -42,23 +42,26 @@ class Corrector
 
 
     public:
-        /** Run correction on a plain text */
-        QString correct(QString plainText);
-
         /** Auto replace to correct OCR errors */
         void autoReplace(QTextDocument* document, bool highlight=true);
 
-        /** Find all errors in the document */
+        /** Try to correct errors in a document */
         void correct(QTextDocument* document, bool highlight=true);
 
-        /** Merge results from two different OCR engines */
-        QString mergeOCRizedTexts(QString strA, QString strB);
+        /** Try to correct errors in a HTML content */
+        QString correct(const QString html);
 
         /** Get colors used for correction */
         QList<QColor> getColors();
 
         /** Get highlighting style */
         int getHighlightStyle();
+
+        /** Check if a word is valid */
+        bool isValid(const QString str);
+
+        /** Merge results from two different OCR engines */
+        QString mergeOCRizedTexts(QString strA, QString strB);
 
         /** Replace all occurrences of <i>before</i> with <i>after</i>
           * and highlight modifications if wanted */
@@ -84,17 +87,10 @@ class Corrector
         /** Highlight text in the document */
         void _highlight(QTextCursor& cursor, QColor color);
 
-        /** Init corrector */
-        void _init();
-
         /** Check if a word is alpha numeric */
         bool _isAlphaNum(const QString str);
 
-        /** Check if a word is valid */
-        bool isValid(const QString str);
-
         /** Check if a word with an apostrophe is valid */
-
         bool _isValidWithApostrophe(const QString str);
 
         /** Detect and remove punctuation inside words */

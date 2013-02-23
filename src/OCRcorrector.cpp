@@ -141,6 +141,34 @@ QList<Word> _getWordsFromTesseract(QString html)
 
 
 
+QString clean(const QString html)
+{
+    QList<Word> words = _getWordsFromCuneiform(html);
+
+    QString validHtml = QString();
+    for (int i = 0; i < words.size(); i++)
+    {
+        if (words[i].isNewLine())
+        {
+            if (i > 0)
+            {
+                validHtml += " </p>\n";
+            }
+
+            validHtml += "<p>";
+        }
+        else
+        {
+            validHtml += " ";
+        }
+
+        validHtml += words[i].getString().trimmed();
+    }
+
+    return validHtml + "</p>";
+}
+
+
 //------------------------------------------------------------------------------
 //  MainWindow::MainWindow()
 //------------------------------------------------------------------------------
@@ -1468,62 +1496,13 @@ void MainWindow::runGroupOCR()
                     tesseractHtml = pText->getCurrentDocument()->toHtml();
                 }
 
-                QList<Word> cuneiformWords = _getWordsFromCuneiform(cuneiformHtml);
-                QList<Word> tesseractWords = _getWordsFromTesseract(tesseractHtml);
-
-                cuneiformHtml = QString();
-                for (int i = 0; i < cuneiformWords.size(); i++)
-                {
-                    if (cuneiformWords[i].isNewLine())
-                    {
-                        if (i > 0)
-                        {
-                            cuneiformHtml += " </p>\n";
-                        }
-
-                        cuneiformHtml += "<p>";
-                    }
-                    else
-                    {
-                        cuneiformHtml += " ";
-                    }
-
-                    cuneiformHtml += cuneiformWords[i].getString().trimmed();
-
-                    //~ if (cuneiformWords[i].isItalic())
-                    //~ {
-                    //~ }
-                }
-
-                tesseractHtml = QString();
-                for (int i = 0; i < tesseractWords.size(); i++)
-                {
-                    if (tesseractWords[i].isNewLine())
-                    {
-                        if (i > 0)
-                        {
-                            tesseractHtml += " </p>\n";
-                        }
-
-                        tesseractHtml += "<p>";
-                    }
-                    else
-                    {
-                        tesseractHtml += " ";
-                    }
-
-                    tesseractHtml += tesseractWords[i].getString().trimmed();
-
-                    //~ if (tesseractWords[i].isItalic())
-                    //~ {
-                    //~ }
-                }
+                /**************************************************************/
+                cuneiformHtml = clean(cuneiformHtml);
+                tesseractHtml = clean(tesseractHtml);
 
                 Corrector corrector(_dictionary, _dictionaryNames);
-                cuneiformHtml = corrector.correct(cuneiformHtml) + "</p>";
-                tesseractHtml = corrector.correct(tesseractHtml) + "</p>";
-
                 QString ocrText = corrector.mergeOCRizedTexts(tesseractHtml, cuneiformHtml);
+                /**************************************************************/
 
                 pText->setOcrText(ocrText);
 
@@ -1660,62 +1639,13 @@ void MainWindow::runSingleOCR()
                 tesseractHtml = pText->getCurrentDocument()->toHtml();
             }
 
-            QList<Word> cuneiformWords = _getWordsFromCuneiform(cuneiformHtml);
-            QList<Word> tesseractWords = _getWordsFromTesseract(tesseractHtml);
-
-            cuneiformHtml = QString();
-            for (int i = 0; i < cuneiformWords.size(); i++)
-            {
-                if (cuneiformWords[i].isNewLine())
-                {
-                    if (i > 0)
-                    {
-                        cuneiformHtml += " </p>\n";
-                    }
-
-                    cuneiformHtml += "<p>";
-                }
-                else
-                {
-                    cuneiformHtml += " ";
-                }
-
-                cuneiformHtml += cuneiformWords[i].getString().trimmed();
-
-                //~ if (cuneiformWords[i].isItalic())
-                //~ {
-                //~ }
-            }
-
-            tesseractHtml = QString();
-            for (int i = 0; i < tesseractWords.size(); i++)
-            {
-                if (tesseractWords[i].isNewLine())
-                {
-                    if (i > 0)
-                    {
-                        tesseractHtml += " </p>\n";
-                    }
-
-                    tesseractHtml += "<p>";
-                }
-                else
-                {
-                    tesseractHtml += " ";
-                }
-
-                tesseractHtml += tesseractWords[i].getString().trimmed();
-
-                //~ if (tesseractWords[i].isItalic())
-                //~ {
-                //~ }
-            }
+            /**************************************************************/
+            cuneiformHtml = clean(cuneiformHtml);
+            tesseractHtml = clean(tesseractHtml);
 
             Corrector corrector(_dictionary, _dictionaryNames);
-            cuneiformHtml = corrector.correct(cuneiformHtml) + "</p>";
-            tesseractHtml = corrector.correct(tesseractHtml) + "</p>";
-
             QString ocrText = corrector.mergeOCRizedTexts(tesseractHtml, cuneiformHtml);
+            /**************************************************************/
 
             pText->setOcrText(ocrText);
             _textEdit->setHtml(ocrText);

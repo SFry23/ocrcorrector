@@ -10,15 +10,6 @@ Corrector::Corrector(QSharedPointer<Dictionary> dicNouns,
     _dicNouns = dicNouns;
     _dicNames = dicNames;
 
-    _init();
-}
-
-
-//------------------------------------------------------------------------------
-//  Corrector::_init()
-//------------------------------------------------------------------------------
-void Corrector::_init()
-{
     _highlightStyle = 0;
 
     _colors.append(QColor(Qt::red));
@@ -165,6 +156,12 @@ int Corrector::getHighlightStyle()
 //------------------------------------------------------------------------------
 QString Corrector::mergeOCRizedTexts(const QString strA, const QString strB)
 {
+
+
+
+
+
+
     // Run correction
     correct(strA);
     correct(strB);

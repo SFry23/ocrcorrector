@@ -6,169 +6,6 @@
 
 
 
-Word::Word(QString str, bool isItalic, bool isNewLine)
-{
-    _str = str;
-    _italic = isItalic;
-    _newLine = isNewLine;
-}
-
-Word::~Word()
-{
-}
-
-QString Word::getString()
-{
-    return _str;
-}
-
-bool Word::isItalic()
-{
-    return _italic;
-}
-
-bool Word::isNewLine()
-{
-    return _newLine;
-}
-
-
-QList<Word> _getWordsFromCuneiform(QString html)
-{
-    QList<Word> words;
-
-    bool inTag = false;
-    bool italic = false;
-    bool newLine = false;
-
-    QString currWord;
-
-    int start = html.indexOf("<body");
-
-    if (start != -1)
-    {
-        for (int i = start; i < html.size(); i++)
-        {
-            QCharRef currChar = html[i];
-
-            if (currChar == '<')
-            {
-                inTag = true;
-
-                if (i + 1 < html.size() and html[i + 1] == 'p')
-                {
-                    newLine = true;
-                }
-            }
-
-            if (not inTag)
-            {
-                if (currChar == ' ')
-                {
-                    words << Word(currWord, italic, newLine);
-                    currWord = QString();
-                    newLine = false;
-                }
-                else
-                {
-                    currWord += currChar;
-                }
-            }
-
-            if (currChar == '>')
-            {
-                inTag = false;
-            }
-        }
-    }
-
-
-    return words;
-}
-
-QList<Word> _getWordsFromTesseract(QString html)
-{
-    QList<Word> words;
-
-    bool inTag = false;
-    bool italic = false;
-    bool newLine = false;
-
-    QString currWord;
-
-    int start = html.indexOf("<body");
-
-    if (start != -1)
-    {
-        for (int i = start; i < html.size(); i++)
-        {
-            QCharRef currChar = html[i];
-
-            if (currChar == '<')
-            {
-                inTag = true;
-
-                if (i + 1 < html.size() and html[i + 1] == 'p')
-                {
-                    newLine = true;
-                }
-            }
-
-            if (not inTag)
-            {
-                if (currChar == ' ')
-                {
-                    words << Word(currWord, italic, newLine);
-                    currWord = QString();
-                    newLine = false;
-                }
-                else
-                {
-                    currWord += currChar;
-                }
-            }
-
-            if (currChar == '>')
-            {
-                inTag = false;
-            }
-        }
-    }
-
-
-    return words;
-}
-
-
-
-QString clean(const QString html)
-{
-    QList<Word> words = _getWordsFromCuneiform(html);
-
-    QString validHtml = QString();
-    for (int i = 0; i < words.size(); i++)
-    {
-        if (words[i].isNewLine())
-        {
-            if (i > 0)
-            {
-                validHtml += " </p>\n";
-            }
-
-            validHtml += "<p>";
-        }
-        else
-        {
-            validHtml += " ";
-        }
-
-        validHtml += words[i].getString().trimmed();
-    }
-
-    return validHtml + "</p>";
-}
-
-
 //------------------------------------------------------------------------------
 //  MainWindow::MainWindow()
 //------------------------------------------------------------------------------
@@ -182,7 +19,7 @@ MainWindow::MainWindow() : QMainWindow()
     resize(screen.size() / 1.5);
 
     // Create text area
-    _textEdit = new TextEdit(this);
+    _textEdit = new QTextEdit(this);
     _textEdit->setContextMenuPolicy(Qt::CustomContextMenu);
 
     // Create image area
@@ -780,12 +617,15 @@ void MainWindow::saveFile(QString filename, QByteArray format="HTML")
     if (not filename.isEmpty())
     {
         // Modify HTML
-        TextEdit* tmpTextEdit = new TextEdit();
-        tmpTextEdit->setHtml(_textEdit->toHtml());
+        QTextEdit* tmpTextEdit = new QTextEdit();
 
-        tmpTextEdit->removeUnderline();
-        tmpTextEdit->removeHighlight();
-        tmpTextEdit->replaceMeta();
+        QStringHtml tmpHtml = _textEdit->toHtml();
+
+        tmpHtml = tmpHtml.removeUnderline();
+        tmpHtml = tmpHtml.removeHighlight();
+        tmpHtml = tmpHtml.replaceMeta();
+
+        tmpTextEdit->setHtml(tmpHtml);
 
         // Create a writer
         QTextDocumentWriter *doc = new QTextDocumentWriter(filename, format);
@@ -793,7 +633,6 @@ void MainWindow::saveFile(QString filename, QByteArray format="HTML")
         // Save
         if (doc->write(tmpTextEdit->document()))
         {
-            // Set document as saved
             setSaved();
             statusBar()->showMessage(tr("Fichier enregistré"), TIME_MSG);
         }
@@ -1394,9 +1233,11 @@ void MainWindow::runGroupCorrection()
 
         displayCurrentText();
 
-        _textEdit->removeBold();
-        _textEdit->removeUnderline();
-        _textEdit->removeHighlight();
+        QStringHtml content = _textEdit->toHtml();
+        content = content.removeBold();
+        content = content.removeUnderline();
+        content = content.removeHighlight();
+        _textEdit->setHtml(content);
 
         Corrector* corrector = new Corrector(_dictionary, _dictionaryNames);
         corrector->setColors(gConfig->colorError, gConfig->colorCorrected, gConfig->colorReplace);
@@ -1442,6 +1283,8 @@ void MainWindow::runGroupOCR()
     statusBar()->addWidget(progressBar);
     progressBar->setRange(0, _documents.size());
 
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+
     int savedIndex = _documents.getIndex();
 
     for (int i = 0; i < _documents.size(); i++)
@@ -1467,10 +1310,9 @@ void MainWindow::runGroupOCR()
 
             if (_ocrManager.getEngine() == OCR::BOTH)
             {
-                QString cuneiformText, tesseractText;
-                QString cuneiformHtml, tesseractHtml;
+                QStringHtml cuneiformHtml, tesseractHtml;
 
-                // Run Tesseract
+                // Run Cuneiform
                 _ocrManager.setEngine(OCR::CUNEIFORM);
 
                 if (_ocrManager.run(imgFileName, textFileName))
@@ -1479,11 +1321,11 @@ void MainWindow::runGroupOCR()
                     _ocrManager.postTreat(textFileName, fontbox->currentText(), sizebox->currentText().toInt());
 
                     pText->loadContent();
-                    cuneiformText = pText->getCurrentDocument()->toPlainText();
                     cuneiformHtml = pText->getCurrentDocument()->toHtml();
+                    cuneiformHtml = cuneiformHtml.reformatHtml();
                 }
 
-                // Run Cuneiform
+                // Run Tesseract
                 _ocrManager.setEngine(OCR::TESSERACT);
 
                 if (_ocrManager.run(imgFileName, textFileName))
@@ -1492,21 +1334,17 @@ void MainWindow::runGroupOCR()
                     _ocrManager.postTreat(textFileName, fontbox->currentText(), sizebox->currentText().toInt());
 
                     pText->loadContent();
-                    tesseractText = pText->getCurrentDocument()->toPlainText();
                     tesseractHtml = pText->getCurrentDocument()->toHtml();
+                    tesseractHtml = tesseractHtml.reformatHtml();
                 }
 
-                /**************************************************************/
-                cuneiformHtml = clean(cuneiformHtml);
-                tesseractHtml = clean(tesseractHtml);
-
                 Corrector corrector(_dictionary, _dictionaryNames);
+
                 QString ocrText = corrector.mergeOCRizedTexts(tesseractHtml, cuneiformHtml);
-                /**************************************************************/
 
                 pText->setOcrText(ocrText);
-
                 _textEdit->setHtml(ocrText);
+
                 save();
 
                 pText->loadContent();
@@ -1545,6 +1383,8 @@ void MainWindow::runGroupOCR()
     //~ statusBar()->addWidget(_statusTextFilename);
     delete progressBar;
 
+    QApplication::restoreOverrideCursor();
+
     setSaved();
 
     emit textChange();
@@ -1558,9 +1398,11 @@ void MainWindow::runSingleCorrection()
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
     statusBar()->showMessage(tr("Correction en cours..."), TIME_MSG);
 
-    _textEdit->removeBold();
-    _textEdit->removeUnderline();
-    _textEdit->removeHighlight();
+    QStringHtml content = _textEdit->toHtml();
+    content = content.removeBold();
+    content = content.removeUnderline();
+    content = content.removeHighlight();
+    _textEdit->setHtml(content);
 
     Corrector* corrector = new Corrector(_dictionary, _dictionaryNames);
 
@@ -1593,8 +1435,8 @@ void MainWindow::runSingleOCR()
 
     // Document
     _documents.setLocked(false);
-    TextDocument* pText = _documents.getTextFile();
 
+    TextDocument* pText = _documents.getTextFile();
     QFile* pImg = _documents.getImageFile();
 
     if (pImg != 0 and pText != 0)
@@ -1610,10 +1452,9 @@ void MainWindow::runSingleOCR()
         // Tesseract + Cuneiform
         if (_ocrManager.getEngine() == OCR::BOTH)
         {
-            QString cuneiformText, tesseractText;
-            QString cuneiformHtml, tesseractHtml;
+            QStringHtml cuneiformHtml, tesseractHtml;
 
-            // Run Tesseract
+            // Run Cuneiform
             _ocrManager.setEngine(OCR::CUNEIFORM);
 
             if (_ocrManager.run(imgFileName, textFileName))
@@ -1622,11 +1463,20 @@ void MainWindow::runSingleOCR()
                 _ocrManager.postTreat(textFileName, fontbox->currentText(), sizebox->currentText().toInt());
 
                 pText->loadContent();
-                cuneiformText = pText->getCurrentDocument()->toPlainText();
+
+                Corrector* corrector = new Corrector(_dictionary, _dictionaryNames);
+                corrector->autoReplace(pText->getCurrentDocument(), false);
+                delete corrector;
+
                 cuneiformHtml = pText->getCurrentDocument()->toHtml();
+                cuneiformHtml = cuneiformHtml.reformatHtml();
+            }
+            else
+            {
+                qDebug() << "ERROR: can't run Cuneiform...";
             }
 
-            // Run Cuneiform
+            // Run Tesseract
             _ocrManager.setEngine(OCR::TESSERACT);
 
             if (_ocrManager.run(imgFileName, textFileName))
@@ -1635,17 +1485,22 @@ void MainWindow::runSingleOCR()
                 _ocrManager.postTreat(textFileName, fontbox->currentText(), sizebox->currentText().toInt());
 
                 pText->loadContent();
-                tesseractText = pText->getCurrentDocument()->toPlainText();
+
+                Corrector* corrector = new Corrector(_dictionary, _dictionaryNames);
+                corrector->autoReplace(pText->getCurrentDocument(), false);
+                delete corrector;
+
                 tesseractHtml = pText->getCurrentDocument()->toHtml();
+                tesseractHtml = tesseractHtml.reformatHtml().removeNewLineTags();
+            }
+            else
+            {
+                qDebug() << "ERROR: can't run Tesseract...";
             }
 
-            /**************************************************************/
-            cuneiformHtml = clean(cuneiformHtml);
-            tesseractHtml = clean(tesseractHtml);
-
             Corrector corrector(_dictionary, _dictionaryNames);
+
             QString ocrText = corrector.mergeOCRizedTexts(tesseractHtml, cuneiformHtml);
-            /**************************************************************/
 
             pText->setOcrText(ocrText);
             _textEdit->setHtml(ocrText);

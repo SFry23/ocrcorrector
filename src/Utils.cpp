@@ -3,53 +3,9 @@
 
 
 //------------------------------------------------------------------------------
-//  Alignment::Alignment()
-//------------------------------------------------------------------------------
-Alignment::Alignment(std::string strA, std::string strB, double score)
-{
-    _strA = strA;
-    _strB = strB;
-    _score = score;
-}
-
-//------------------------------------------------------------------------------
-//  Alignment::~Alignment()
-//------------------------------------------------------------------------------
-Alignment::~Alignment()
-{
-}
-
-//------------------------------------------------------------------------------
-//  Alignment::getScore()
-//------------------------------------------------------------------------------
-double Alignment::getScore()
-{
-    return _score;
-}
-
-//------------------------------------------------------------------------------
-//  Alignment::getStringA()
-//------------------------------------------------------------------------------
-std::string Alignment::getStringA()
-{
-    return _strA;
-}
-
-//------------------------------------------------------------------------------
-//  Alignment::getStringB()
-//------------------------------------------------------------------------------
-std::string Alignment::getStringB()
-{
-    return _strB;
-}
-
-
-
-
-//------------------------------------------------------------------------------
 //  QAlignment::QAlignment()
 //------------------------------------------------------------------------------
-QAlignment::QAlignment(QString strA, QString strB, double score)
+QAlignment::QAlignment(const QString strA, const QString strB, double score)
 {
     _strA = strA;
     _strB = strB;
@@ -90,167 +46,6 @@ QString QAlignment::getStringB()
 
 
 
-
-//------------------------------------------------------------------------------
-//  Levenshtein::Levenshtein()
-//------------------------------------------------------------------------------
-Levenshtein::Levenshtein(std::string strA, std::string strB)
-{
-    _strA = strA;
-    _strB = strB;
-    _gapPenalty = -0.1;
-    _gapSymbol = '$';
-    _S = SubstitutionMatrix(200);
-
-    //~ _S.read("src/dic/.tesseract-substitution.txt");
-}
-
-//------------------------------------------------------------------------------
-//  Levenshtein::~Levenshtein()
-//------------------------------------------------------------------------------
-Levenshtein::~Levenshtein()
-{
-}
-
-//------------------------------------------------------------------------------
-//  Levenshtein::align()
-//------------------------------------------------------------------------------
-Alignment Levenshtein::align()
-{
-    // Compare two words
-    FileArray<double> F(_strA.size() + 1, _strB.size() + 1);
-
-    // First line
-    for (int i = 1; i < F.sizeX(); i++)
-        F(i, 0) = _gapPenalty * i;
-
-    // First column
-    for (int i = 1; i < F.sizeY(); i++)
-        F(0, i) = _gapPenalty * i;
-
-    // Needleman wunsch
-    for (int i = 1; i <= (int) _strA.size(); i++)
-    {
-        for (int j = 1; j <= (int) _strB.size(); j++)
-        {
-            double choice1 = 0;
-
-            int codeLetterA = _charToNum(_strA[i-1]);
-            int codeLetterB = _charToNum(_strB[j-1]);
-
-            if (codeLetterA >= 0 and codeLetterA < _S.sizeX() and codeLetterB >= 0 and codeLetterB < _S.sizeY())
-                choice1 = F(i - 1, j - 1) + _S(codeLetterA, codeLetterB);
-            else
-                std::cout << _S.sizeX() << "x" << _S.sizeY() << " " << _strA[i-1] << "(" << codeLetterA << ") " << _strB[j-1] << "(" << codeLetterB << ")" << std::endl;
-
-
-            double choice2 = F(i - 1, j) + _gapPenalty;
-            double choice3 = F(i, j - 1) + _gapPenalty;
-
-            F(i, j) = std::max(std::max(choice1, choice2), choice3);
-        }
-    }
-
-    // Retrieve alignment
-    std::string alignA;
-    std::string alignB;
-
-    int i = _strA.size();
-    int j = _strB.size();
-
-    while (i > 0 and j > 0)
-    {
-        double currScore = F(i, j);
-        double scoreLeft = F(i - 1, j);
-        double scoreUp = F(i, j - 1);
-
-
-        if (currScore == scoreLeft + _gapPenalty)
-        {
-            alignA = _strA[i-1] + alignA;
-            alignB = _gapSymbol + alignB;
-            i--;
-        }
-        else if (currScore == scoreUp + _gapPenalty)
-        {
-            alignA = _gapSymbol + alignA;
-            alignB = _strB[j-1] + alignB;
-            j--;
-        }
-        else
-        {
-            alignA = _strA[i-1] + alignA;
-            alignB = _strB[j-1] + alignB;
-            i--;
-            j--;
-        }
-    }
-
-    while (i > 0)
-    {
-        alignA = _strA[i-1] + alignA;
-        alignB = _gapSymbol + alignB;
-        i--;
-    }
-
-    while (j > 0)
-    {
-        alignA = _gapSymbol + alignA;
-        alignB = _strB[j-1] + alignB;
-        j--;
-    }
-
-
-    Alignment align(alignA, alignB, F(_strA.size(), _strB.size()));
-
-    return align;
-}
-
-//------------------------------------------------------------------------------
-//  Levenshtein::getGapPenalty()
-//------------------------------------------------------------------------------
-double Levenshtein::getGapPenalty()
-{
-    return _gapPenalty;
-}
-
-//------------------------------------------------------------------------------
-//  Levenshtein::getSubstitutionMatrix()
-//------------------------------------------------------------------------------
-SubstitutionMatrix Levenshtein::getSubstitutionMatrix()
-{
-    return _S;
-}
-
-//------------------------------------------------------------------------------
-//  Levenshtein::setGapPenalty()
-//------------------------------------------------------------------------------
-void Levenshtein::setGapPenalty(double gapPenalty)
-{
-    _gapPenalty = gapPenalty;
-}
-
-//------------------------------------------------------------------------------
-//  Levenshtein::useSubstitutionMatrix()
-//------------------------------------------------------------------------------
-bool Levenshtein::useSubstitutionMatrix(std::string filename)
-{
-    return _S.read(filename);
-}
-
-//------------------------------------------------------------------------------
-//  Levenshtein::_charToNum()
-//------------------------------------------------------------------------------
-int Levenshtein::_charToNum(const char c)
-{
-    return (int) c;
-}
-
-
-
-
-
-
 //------------------------------------------------------------------------------
 //  QLevenshtein::QLevenshtein()
 //------------------------------------------------------------------------------
@@ -258,12 +53,10 @@ QLevenshtein::QLevenshtein(QString strA, QString strB)
 {
     _strA = strA;
     _strB = strB;
-    _gapPenalty = -0.5;
+    _gapOpeningPenalty = -1;
+    _gapExtensionPenalty = -0.6;
     _gapSymbol = '$';
     _S = SubstitutionMatrix(200);
-
-    //~ _S.read("src/dic/.tesseract-substitution.txt");
-
 }
 
 //------------------------------------------------------------------------------
@@ -278,104 +71,25 @@ QLevenshtein::~QLevenshtein()
 //------------------------------------------------------------------------------
 QAlignment QLevenshtein::align()
 {
-    // Compare two words
-    FileArray<double> F(_strA.size() + 1, _strB.size() + 1);
+    FileArray<double> F = _createScoreMatrix();
 
-    // First line
-    for (int i = 1; i < F.sizeX(); i++)
-        F(i, 0) = _gapPenalty * i;
-
-    // First column
-    for (int i = 1; i < F.sizeY(); i++)
-        F(0, i) = _gapPenalty * i;
-
-    // Levenshtein distance
-    for (int i = 1; i <= (int) _strA.size(); i++)
-    {
-        for (int j = 1; j <= (int) _strB.size(); j++)
-        {
-            double choice1 = F(i - 1, j - 1);
-            double choice2 = F(i - 1, j) + _gapPenalty;
-            double choice3 = F(i, j - 1) + _gapPenalty;
-
-            int codeLetterA = _charToNum(_strA[i-1]);
-            int codeLetterB = _charToNum(_strB[j-1]);
-
-            if (codeLetterA >= 0 and codeLetterA < _S.sizeX() and codeLetterB >= 0 and codeLetterB < _S.sizeY())
-                choice1 += _S(codeLetterA, codeLetterB);
-            else
-            {
-                //~ qDebug() << _S.sizeX() << "x" << _S.sizeY() << " " << _strA[i-1] << "(" << codeLetterA << ") " << _strB[j-1] << "(" << codeLetterB << ")";
-
-                if (codeLetterA == codeLetterB)
-                    choice1 += abs(_gapPenalty * 2);
-            }
-
-            F(i, j) = std::max(std::max(choice1, choice2), choice3);
-        }
-    }
-
-    // Retrieve alignment
-    QString alignA;
-    QString alignB;
-
-    int i = _strA.size();
-    int j = _strB.size();
-
-    while (i > 0 and j > 0)
-    {
-        double currScore = F(i, j);
-        double scoreLeft = F(i - 1, j);
-        double scoreUp = F(i, j - 1);
-
-
-        if (currScore == scoreLeft + _gapPenalty)
-        {
-            alignA = _strA[i-1] + alignA;
-            alignB = _gapSymbol + alignB;
-            i--;
-        }
-        else if (currScore == scoreUp + _gapPenalty)
-        {
-            alignA = _gapSymbol + alignA;
-            alignB = _strB[j-1] + alignB;
-            j--;
-        }
-        else
-        {
-            alignA = _strA[i-1] + alignA;
-            alignB = _strB[j-1] + alignB;
-            i--;
-            j--;
-        }
-    }
-
-    while (i > 0)
-    {
-        alignA = _strA[i-1] + alignA;
-        alignB = _gapSymbol + alignB;
-        i--;
-    }
-
-    while (j > 0)
-    {
-        alignA = _gapSymbol + alignA;
-        alignB = _strB[j-1] + alignB;
-        j--;
-    }
-
-
-    QAlignment align(alignA, alignB, F(_strA.size(), _strB.size()));
-
-    return align;
+    return _retrieveAlignment(F);
 }
 
 //------------------------------------------------------------------------------
-//  QLevenshtein::getGapPenalty()
+//  QLevenshtein::getGapExtensionPenalty()
 //------------------------------------------------------------------------------
-double QLevenshtein::getGapPenalty()
+double QLevenshtein::getGapExtensionPenalty()
 {
-    return _gapPenalty;
+    return _gapOpeningPenalty;
+}
+
+//------------------------------------------------------------------------------
+//  QLevenshtein::getGapOpeningPenalty()
+//------------------------------------------------------------------------------
+double QLevenshtein::getGapOpeningPenalty()
+{
+    return _gapOpeningPenalty;
 }
 
 //------------------------------------------------------------------------------
@@ -387,20 +101,31 @@ SubstitutionMatrix QLevenshtein::getSubstitutionMatrix()
 }
 
 //------------------------------------------------------------------------------
-//  QLevenshtein::setGapPenalty()
+//  QLevenshtein::setGapExtensionPenalty()
 //------------------------------------------------------------------------------
-void QLevenshtein::setGapPenalty(double gapPenalty)
+void QLevenshtein::setGapExtensionPenalty(double gapPenalty)
 {
-    _gapPenalty = gapPenalty;
+    _gapExtensionPenalty = gapPenalty;
+}
+
+//------------------------------------------------------------------------------
+//  QLevenshtein::setGapOpeningPenalty()
+//------------------------------------------------------------------------------
+void QLevenshtein::setGapOpeningPenalty(double gapPenalty)
+{
+    _gapOpeningPenalty = gapPenalty;
 }
 
 //------------------------------------------------------------------------------
 //  QLevenshtein::useSubstitutionMatrix()
 //------------------------------------------------------------------------------
-bool QLevenshtein::useSubstitutionMatrix(QString filename)
+bool QLevenshtein::setSubstitutionMatrix(QString filename)
 {
     return _S.read(filename);
 }
+
+
+
 
 //------------------------------------------------------------------------------
 //  QLevenshtein::_charToNum()
@@ -410,9 +135,116 @@ int QLevenshtein::_charToNum(const QChar c)
     return (int) c.toAscii();
 }
 
-
-int charToNum(const QChar c)
+//------------------------------------------------------------------------------
+//  QLevenshtein::_createScoreMatrix()
+//------------------------------------------------------------------------------
+FileArray<double> QLevenshtein::_createScoreMatrix()
 {
-    return (int) c.toAscii();
+    FileArray<double> F(_strA.size() + 1, _strB.size() + 1);
+
+    // Initialization
+    for (int i = 1; i < F.sizeX(); i++)
+        F(i, 0) = _gapOpeningPenalty * i;
+
+    for (int j = 1; j < F.sizeY(); j++)
+        F(0, j) = _gapOpeningPenalty * j;
+
+
+    // Compute matrix
+    for (int i = 1; i <= (int) _strA.size(); i++)
+    {
+        for (int j = 1; j <= (int) _strB.size(); j++)
+        {
+            double choice1 = F(i - 1, j - 1);
+            double choice2 = F(i - 1, j) + _gapOpeningPenalty;
+
+            if (i < 2)
+                choice2 = F(i - 1, j) + _gapExtensionPenalty;
+            else if (F(i - 1, j) == F(i - 2, j) + _gapOpeningPenalty or F(i - 1, j) == F(i - 2, j) + _gapExtensionPenalty)
+                choice2 = F(i - 1, j) + _gapExtensionPenalty;
+
+            double choice3 = F(i, j - 1) + _gapOpeningPenalty;
+
+            if (i < 2)
+                choice3 = F(i - 1, j) + _gapExtensionPenalty;
+            else if (F(i, j - 1) == F(i, j - 2) + _gapOpeningPenalty or F(i, j - 1) == F(i, j - 2) + _gapExtensionPenalty)
+                choice3 = F(i, j - 1) + _gapExtensionPenalty;
+
+            int codeLetterA = _charToNum(_strA[i-1]);
+            int codeLetterB = _charToNum(_strB[j-1]);
+
+            if (codeLetterA >= 0 and codeLetterA < _S.sizeX() and
+                codeLetterB >= 0 and codeLetterB < _S.sizeY())
+            {
+                choice1 += _S(codeLetterA, codeLetterB);
+            }
+            else
+            {
+                if (codeLetterA == codeLetterB)
+                    choice1 += abs(_gapOpeningPenalty / 2);
+            }
+
+            F(i, j) = std::max(std::max(choice1, choice2), choice3);
+        }
+    }
+
+    return F;
+}
+
+//------------------------------------------------------------------------------
+//  QLevenshtein::_retrieveAlignment()
+//------------------------------------------------------------------------------
+QAlignment QLevenshtein::_retrieveAlignment(FileArray<double> F)
+{
+    QString alignedA;
+    QString alignedB;
+
+    int i = _strA.size();
+    int j = _strB.size();
+
+    while (i > 0 and j > 0)
+    {
+        double currScore = F(i, j);
+        double scoreLeft = F(i - 1, j);
+        double scoreUp = F(i, j - 1);
+
+        if (currScore == scoreLeft + _gapOpeningPenalty or
+            currScore == scoreLeft + _gapExtensionPenalty)
+        {
+            alignedA = _strA[i-1] + alignedA;
+            alignedB = _gapSymbol + alignedB;
+            i--;
+        }
+        else if (currScore == scoreUp + _gapOpeningPenalty or
+                 currScore == scoreUp + _gapExtensionPenalty)
+        {
+            alignedA = _gapSymbol + alignedA;
+            alignedB = _strB[j-1] + alignedB;
+            j--;
+        }
+        else
+        {
+            alignedA = _strA[i-1] + alignedA;
+            alignedB = _strB[j-1] + alignedB;
+            i--;
+            j--;
+        }
+    }
+
+    while (i > 0)
+    {
+        alignedA = _strA[i-1] + alignedA;
+        alignedB = _gapSymbol + alignedB;
+        i--;
+    }
+
+    while (j > 0)
+    {
+        alignedA = _gapSymbol + alignedA;
+        alignedB = _strB[j-1] + alignedB;
+        j--;
+    }
+
+    return QAlignment(alignedA, alignedB, F(_strA.size(), _strB.size()));
 }
 

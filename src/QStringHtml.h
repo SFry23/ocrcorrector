@@ -1,9 +1,8 @@
 #ifndef QStringHtml_h
 #define QStringHtml_h
 
-
-
 #include <QtCore>
+
 
 
 enum StripMode
@@ -38,6 +37,12 @@ class QStringHtml : public QString
          */
         QStringHtml deleteLines(int startingLine, int n);
 
+        /** Simplify, clean and uniformize HTML */
+        QStringHtml reformatHtml();
+
+        /** Concatenate all HTML paragraphs into a single one */
+        QStringHtml removeNewLineTags();
+
         /** Remove the first or the last consecutive HTML tags
          *
          *  @param mode LEADING removes the first HTML tag (default).<br/>
@@ -51,6 +56,13 @@ class QStringHtml : public QString
          *  @return A QString with the same content.
          */
         QString toQString();
+
+        QStringHtml removeBold();
+        QStringHtml removeHighlight();
+        QStringHtml removeItalic();
+        QStringHtml removeUnderline();
+        QStringHtml replaceMeta();
+        QStringHtml removeRightSpaces();
 };
 
 

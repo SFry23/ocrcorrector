@@ -21,6 +21,9 @@ class Dictionary
         /** Get path to the Dictionary */
         QString getPath();
 
+        /** Get words of the dictionary */
+        QStringList getWords();
+
         /** Load the Dictionary */
         bool load();
 

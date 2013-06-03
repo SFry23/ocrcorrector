@@ -1,4 +1,4 @@
-#include <QtCore>
+//~ #include <QtCore>
 #include <QtGui>
 
 #include "OCRcorrector.h"
@@ -31,7 +31,8 @@ int main(int argc, char* argv[])
 
     // QT translator
     QTranslator stdTranslator;
-    stdTranslator.load("qt_" + QLocale::system().name(), QLibraryInfo::location(QLibraryInfo::TranslationsPath));
+    stdTranslator.load("qt_" + QLocale::system().name(),
+                       QLibraryInfo::location(QLibraryInfo::TranslationsPath));
     app.installTranslator(&stdTranslator);
 
     // Create configuration manager

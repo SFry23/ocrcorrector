@@ -2,34 +2,10 @@
 #define Utils_h
 
 #include <QtCore>
-#include <string>
 #include "SubstitutionMatrix.h"
 
 
-class Alignment
-{
-    // Constructor and Destructor
-    public:
-        Alignment(std::string strA, std::string strB, double score);
-        ~Alignment();
-
-    // Attributes
-    private:
-        std::string _strA, _strB;
-        double _score;
-
-    // Methods
-    public:
-        /** Get the alignment score */
-        double getScore();
-
-        /** Get the first string aligned */
-        std::string getStringA();
-
-        /** Get the second string aligned */
-        std::string getStringB();
-};
-
+/** Alignment of two strings result */
 class QAlignment
 {
     // Constructor and Destructor
@@ -39,7 +15,10 @@ class QAlignment
 
     // Attributes
     private:
+        /** Aligned strings */
         QString _strA, _strB;
+
+        /** Alignment score */
         double _score;
 
     // Methods
@@ -54,49 +33,7 @@ class QAlignment
         QString getStringB();
 };
 
-
-class Levenshtein
-{
-    // Constructor and Destructor
-    public:
-        Levenshtein(std::string strA, std::string strB);
-        ~Levenshtein();
-
-    // Attributes
-    private:
-        SubstitutionMatrix _S;
-        std::string _strA, _strB;
-        double _gapPenalty;
-        char _gapSymbol;
-
-    // Methods
-    public:
-        /** Align the two strings */
-        Alignment align();
-
-        /** Get the current gap penalty */
-        double getGapPenalty();
-
-        /** Get the gap symbol */
-        char getGapSymbol();
-
-        /** Get the substitution matrix */
-        SubstitutionMatrix getSubstitutionMatrix();
-
-        /** Change the current gap penalty */
-        void setGapPenalty(double gapPenalty);
-
-        /** Change gap symbol */
-        void setGapSymbol(char gapSymbol);
-
-        /** Use a specific substitution matrix stored in a file */
-        bool useSubstitutionMatrix(std::string filename);
-
-    private:
-        /** Convert a char to an int */
-        int _charToNum(const char c);
-};
-
+/** Levenshtein alignment between two strings */
 class QLevenshtein
 {
     // Constructor and Destructor
@@ -108,7 +45,8 @@ class QLevenshtein
     private:
         SubstitutionMatrix _S;
         QString _strA, _strB;
-        double _gapPenalty;
+        double _gapOpeningPenalty;
+        double _gapExtensionPenalty;
         char _gapSymbol;
 
     // Methods
@@ -116,8 +54,11 @@ class QLevenshtein
         /** Align the two strings */
         QAlignment align();
 
-        /** Get the current gap penalty */
-        double getGapPenalty();
+        /** Get the current gap extension penalty */
+        double getGapExtensionPenalty();
+
+        /** Get the current gap opening penalty */
+        double getGapOpeningPenalty();
 
         /** Get the gap symbol */
         char getGapSymbol();
@@ -125,22 +66,28 @@ class QLevenshtein
         /** Get the substitution matrix */
         SubstitutionMatrix getSubstitutionMatrix();
 
-        /** Change the current gap penalty */
-        void setGapPenalty(double gapPenalty);
+        /** Change the current gap extension penalty */
+        void setGapExtensionPenalty(double gapPenalty);
+
+        /** Change the current gap opening penalty */
+        void setGapOpeningPenalty(double gapPenalty);
 
         /** Change gap symbol */
         void setGapSymbol(char gapSymbol);
 
         /** Use a specific substitution matrix stored in a file */
-        bool useSubstitutionMatrix(QString filename);
+        bool setSubstitutionMatrix(QString filename);
 
     private:
         /** Convert a char to an int */
         int _charToNum(const QChar c);
-};
 
-// TODO : changer la fonction de place
-int charToNum(const QChar c);
+        /** Compute score matrix */
+        FileArray<double> _createScoreMatrix();
+
+        /** Retrieve alignment from score matrix */
+        QAlignment _retrieveAlignment(FileArray<double> scoreArray);
+};
 
 
 #endif

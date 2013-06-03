@@ -2,10 +2,8 @@
 #define PushButtonColor_h
 
 
-
 #include <QtCore>
 #include <QtGui>
-
 
 
 class PushButtonColor : public QPushButton
@@ -26,7 +24,7 @@ class PushButtonColor : public QPushButton
 
     public:
         /** Colorize the button */
-        void colorize();
+        void colorize(const QColor color);
 
         /** Get the current color of the button */
         QColor getColor();
@@ -34,11 +32,11 @@ class PushButtonColor : public QPushButton
         /** Return button ID */
         int getId();
 
-        /** Chnage button color */
-        void setColor(QColor color);
+        /** Change button color */
+        void setColor(const QColor color);
 
         /** Change button ID */
-        void setId(int id);
+        void setId(const int id);
 
     signals:
         void clicked(const QColor&);

@@ -6,8 +6,6 @@
 #include <QObject>
 #include <QTextCodec>
 
-#include "TextEdit.h"
-
 // Config
 #include "Config.h"
 
@@ -270,7 +268,7 @@ class MainWindow : public QMainWindow
         DocumentList _documents;
 
         /** Text area */
-        TextEdit* _textEdit;
+        QTextEdit* _textEdit;
 
         /** Image area */
         QScrollArea* _scrollArea;

@@ -90,8 +90,6 @@ bool OCR::run(const QString inFilename, const QString outFilename)
         QProcess process;
         QString cmd = _generateCommand(inFilename, outFilename);
 
-        qDebug() << cmd;
-
         if (not cmd.isEmpty())
         {
             process.start(cmd);
@@ -99,15 +97,10 @@ bool OCR::run(const QString inFilename, const QString outFilename)
             if (not process.waitForStarted())
                 return false;
 
-            if (not process.waitForFinished(OCR::TIMEOUT))
+            if (not process.waitForFinished())
                 return false;
 
-            if (not process.readAllStandardOutput().isEmpty())
-                return true;
-        }
-        else
-        {
-            qDebug() << cmd;
+            return true;
         }
     }
 

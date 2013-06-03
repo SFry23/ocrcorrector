@@ -105,8 +105,8 @@ class Config
             {
                 this->pathDefaultDic = dicInfo.absoluteFilePath();
                 this->pathDefaultDicNames = exec.absolutePath() + QDir::separator() +
-                                               QString("dictionaries") + QDir::separator() +
-                                               QString("names.txt");
+                                            QString("dictionaries") + QDir::separator() +
+                                            QString("names.txt");
             }
             else
             {

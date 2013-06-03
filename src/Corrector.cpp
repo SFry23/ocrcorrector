@@ -4,8 +4,7 @@
 //------------------------------------------------------------------------------
 //  Corrector::Corrector()
 //------------------------------------------------------------------------------
-Corrector::Corrector(QSharedPointer<Dictionary> dicNouns,
-                     QSharedPointer<Dictionary> dicNames)
+Corrector::Corrector(DictionaryPtr dicNouns, DictionaryPtr dicNames)
 {
     _dicNouns = dicNouns;
     _dicNames = dicNames;
@@ -19,7 +18,7 @@ Corrector::Corrector(QSharedPointer<Dictionary> dicNouns,
     // Constants
     _simplePonctuation = QStringList() << "." << "…" << ";" << "," << ")" << ":";
     _doublePonctuation = QStringList() << "?" << "!" << ":" << "»";
-    _apostrophePrefixes = QStringList() << "c" << "ç" << "d" << "j" << "l" << "m" << "n" \
+    _apostrophePrefixes = QStringList() << "c" << "ç" <<"Ç" << "d" << "j" << "l" << "m" << "n" \
                         << "qu" << "s" << "t" << "quoiqu" << "lorsqu" \
                         << "jusqu" << "puisqu";
 }
@@ -32,38 +31,15 @@ Corrector::~Corrector()
 {
 }
 
+
+
 //------------------------------------------------------------------------------
 //  Corrector::autoReplace()
 //------------------------------------------------------------------------------
 void Corrector::autoReplace(QTextDocument* document, bool highlight)
 {
-    // Substitutions of simple strings
-    QMap<QString, QString> simpleRules;
-
-    simpleRules.insert("â€” ", "— ");
-    simpleRules.insert("â€”", "— ");
-    simpleRules.insert("*", "’");
-    simpleRules.insert("â€” ", "— ");
-    simpleRules.insert("A ", "À ");
-    simpleRules.insert("oeil", "œil");
-
-    // Substitutions with regular expressions
-    QMap<QString, QString> regexRules;
-
-    regexRules.insert("[I1]['’]", "l’");
-    regexRules.insert("([\\.!\\?]) [l1][Il1] ", "\\1 Il ");
-    regexRules.insert("([\\.!\\?]) I[I1] ", "\\1 Il ");
-    regexRules.insert("([\\.!\\?]) H(s?) ", "\\1 Il\\2 ");
-    regexRules.insert("^H(s?) ", "Il\\1 ");
-    regexRules.insert("([eE])He(s?) ", "\\1lle\\2 ");
-    regexRules.insert("['']", "’");
-    regexRules.insert("- ", "");
-    regexRules.insert("['’]\\?", "?");
-    regexRules.insert("\\.['’]", ".");
-    regexRules.insert("(\\w)—(\\w)", "\\1-\\2");
-    regexRules.insert("([!\\?\\.:]\\s?)— ", "\\1\n— ");
-    regexRules.insert("([\\w])([!\\?])", "\\1 \\2");
-
+    QMap<QString, QString> simpleRules = createSimpleReplacementRules();
+    QMap<QString, QString> regexRules = createRegexReplacementRules();
 
     QMap<QString, QString>::const_iterator it = simpleRules.constBegin();
     while (it != simpleRules.constEnd())
@@ -85,14 +61,14 @@ void Corrector::autoReplace(QTextDocument* document, bool highlight)
 //------------------------------------------------------------------------------
 void Corrector::correct(QTextDocument* document, bool highlight)
 {
-    _removeImages(document);
-    _removePageNumber(document);
-    _removePunctuationInsideWords(document);
-
-    autoReplace(document, highlight);
-
-    if (document != 0 and _dicNouns != 0)
+    if (document != 0)
     {
+        _removeImages(document);
+        _removePageNumber(document);
+        _removePunctuationInsideWords(document);
+
+        autoReplace(document, highlight);
+
         QTextCursor cursor = QTextCursor(document);
 
         do
@@ -102,10 +78,23 @@ void Corrector::correct(QTextDocument* document, bool highlight)
 
             if (not isValid(word))
             {
-                if (highlight)
+                // Word considered as correct if present at least twice in the document
+                if (word.contains(QRegExp("^[A-ZÉÈÊÎÔÛ]")))
                 {
-                    // Highlight errors
-                    _highlight(cursor, _colors[0]);
+                    if (document->toHtml().count(word[0]) >= 2)
+                        continue;
+                }
+
+                //~ if (word.size() == 1)
+                    //~ cursor.removeSelectedText();
+
+                if (cursor.selectionStart() != 0 and not _correctWord(cursor))
+                {
+                    if (highlight)
+                    {
+                        // Highlight errors
+                        _highlight(cursor, _colors[0]);
+                    }
                 }
             }
         }
@@ -129,12 +118,93 @@ QString Corrector::correct(const QString str)
         correct(document, false);
 
         correction = document->toHtml();
-
-        delete document;
     }
+
+    delete document;
 
     return correction;
 }
+
+//------------------------------------------------------------------------------
+//  Corrector::createRegexReplacementRules()
+//------------------------------------------------------------------------------
+QMap<QString, QString> Corrector::createRegexReplacementRules()
+{
+    // Substitutions with regular expressions
+    QMap<QString, QString> regexRules;
+
+    regexRules.insert("[I1]['’]", "l’");
+    regexRules.insert("([\\.!\\?]) [l1][Il1] ", "\\1 Il ");
+    regexRules.insert("([\\.!\\?]) I[I1] ", "\\1 Il ");
+    regexRules.insert("([\\.!\\?]) H(s?) ", "\\1 Il\\2 ");
+    regexRules.insert("^H(s?) ", "Il\\1 ");
+    regexRules.insert("([eE])He(s?) ", "\\1lle\\2 ");
+    regexRules.insert("['']", "’");
+    regexRules.insert("- ", "");
+    regexRules.insert("['’]\\?", "?");
+    regexRules.insert("\\.['’]", ".");
+    regexRules.insert("(\\w)—(\\w)", "\\1-\\2");
+    regexRules.insert("([!\\?\\.:]\\s?)— ", "\\1\n— ");
+    regexRules.insert("([\\w])([!\\?])", "\\1 \\2");
+    regexRules.insert("at-(elle|il)", "a-t-\\1");
+
+    return regexRules;
+}
+
+//------------------------------------------------------------------------------
+//  Corrector::createSimpleReplacementRules()
+//------------------------------------------------------------------------------
+QMap<QString, QString> Corrector::createSimpleReplacementRules()
+{
+    // Substitutions of simple strings
+    QMap<QString, QString> simpleRules;
+
+    simpleRules.insert("â€” ", "— ");
+    simpleRules.insert("â€”", "— ");
+    simpleRules.insert("*", "’");
+    simpleRules.insert("â€” ", "— ");
+    simpleRules.insert("A ", "À ");
+    simpleRules.insert("oeil", "œil");
+    simpleRules.insert("ﬁ", "fi");
+    simpleRules.insert("ﬂ", "fl");
+
+    return simpleRules;
+}
+
+//------------------------------------------------------------------------------
+//  Corrector::findSimilarWord()
+//------------------------------------------------------------------------------
+QString Corrector::findSimilarWord(const QString str)
+{
+    QString result = QString();
+
+    if (str.size() > 3)
+    {
+        QStringList words;
+        double treshold = 0.70;
+        double max = 0;
+
+        words = retrieveCandidates(str);
+
+        for (int i = 0; i < words.size(); i++)
+        {
+            QLevenshtein aligner = QLevenshtein(str, words[i]);
+            QAlignment alignment = aligner.align();
+
+            if (alignment.getScore() / words[i].size() > treshold)
+            {
+                if (alignment.getScore() > max)
+                {
+                    result = words[i];
+                    max = alignment.getScore();
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
 //------------------------------------------------------------------------------
 //  Corrector::getColors()
 //------------------------------------------------------------------------------
@@ -152,26 +222,73 @@ int Corrector::getHighlightStyle()
 }
 
 //------------------------------------------------------------------------------
+//  Corrector::isValid()
+//------------------------------------------------------------------------------
+bool Corrector::isValid(const QString str)
+{
+    if (_dicNouns != 0)
+    {
+        if (_dicNouns->search(str.toLower()) != -1)
+            return true;
+        else if (_dicNames != 0 and _dicNames->search(str) != -1)
+            return true;
+        else if (_isValidWithApostrophe(str))
+            return true;
+        else if (str == "—" or _doublePonctuation.contains(str))
+            return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------------
 //  Corrector::mergeOCRizedTexts()
 //------------------------------------------------------------------------------
 QString Corrector::mergeOCRizedTexts(const QString strA, const QString strB)
 {
-
-
-
-
-
-
-    // Run correction
-    correct(strA);
-    correct(strB);
-
     // Align strings
     QLevenshtein aligner(strA, strB);
     QAlignment alignment = aligner.align();
 
     QString alignedA = alignment.getStringA();
     QString alignedB = alignment.getStringB();
+
+
+    // Remove noise
+    QStringList regexps;
+
+    // Remove '$' char at the begining of the first paragraph
+    regexps << "<body [^>]*>[^<]*<p> (.?\\$+)";
+
+    // Remove '$' char at the begining of the text, before the first paragraph
+    regexps << "<body [^>]*>[\n\\s]*(\\$+)";
+
+    // Remove '$' char at the end of the last paragraph
+    regexps << "([\\s\\$]+)</p>[^>]*</body>";
+
+    // Remove '$' char at the end of the text, after the last paragraph
+    regexps << "((\\$+\n?)+)</body>";
+
+    for (int i = 0; i < regexps.size(); i++)
+    {
+        QRegExp regexA = QRegExp(regexps[i]);
+        QRegExp regexB = QRegExp(regexps[i]);
+
+        alignedA.indexOf(regexA);
+        alignedB.indexOf(regexB);
+
+        if (regexA.cap(1).size() > regexB.cap(1).size())
+        {
+            alignedA = alignedA.replace(regexA.pos(1), regexA.cap(1).size(), "");
+            alignedB = alignedB.replace(regexA.pos(1), regexA.cap(1).size(), "");
+        }
+        else
+        {
+            alignedA = alignedA.replace(regexB.pos(1), regexB.cap(1).size(), "");
+            alignedB = alignedB.replace(regexB.pos(1), regexB.cap(1).size(), "");
+        }
+    }
+
 
     // Merge
     QStringList validWords;
@@ -182,8 +299,8 @@ QString Corrector::mergeOCRizedTexts(const QString strA, const QString strB)
     {
         if (alignedA[i].isSpace() or alignedB[i].isSpace())
         {
-            QString wordA = alignedA.mid(wordStart, i - wordStart).replace("$", "");
-            QString wordB = alignedB.mid(wordStart, i - wordStart).replace("$", "");
+            const QString wordA = alignedA.mid(wordStart, i - wordStart).replace("$", "");
+            const QString wordB = alignedB.mid(wordStart, i - wordStart).replace("$", "");
 
             if (wordA.trimmed() == wordB.trimmed())
             {
@@ -191,32 +308,57 @@ QString Corrector::mergeOCRizedTexts(const QString strA, const QString strB)
             }
             else
             {
-                bool wordAExists = isValid(wordA);
-                bool wordBExists = isValid(wordB);
+                QString wordA_clean = QString(wordA).replace(QRegExp("[\\.\\?!,]"), "");
+                QString wordB_clean = QString(wordB).replace(QRegExp("[\\.\\?!,]"), "");
+
+                bool wordAExists = isValid(wordA_clean) or wordA == "<i>" or wordA == "</i>";
+                bool wordBExists = isValid(wordB_clean) or wordB == "<i>" or wordB == "</i>";
+
+                qDebug() << wordA_clean << ":" << wordAExists << " " << wordB_clean << ":" << wordBExists;
 
                 if (wordAExists and not wordBExists)
                     validWords << wordA;
                 else if (wordBExists and not wordAExists)
                     validWords << wordB;
                 else if (wordAExists and wordBExists)
-                    validWords << wordA;
-                else
                 {
-                    if (wordA.isEmpty() and wordB.contains(QRegExp("[a-zA-Z0-9]")))
+                    if (wordA.contains(QRegExp("[A-Z0-9]")) and not wordB.contains(QRegExp("[A-Z0-9]")))
                         validWords << wordB;
-                    else if (wordB.isEmpty() and wordA.contains(QRegExp("[a-zA-Z0-9]")))
-                        validWords << wordA;
-                    else if (not wordA.isEmpty() and not wordB.isEmpty())
+                    else
                         validWords << wordA;
                 }
+                else
+                {
+                    if (wordA.isEmpty() and wordB.size() >= 2 and wordB.contains(QRegExp("[a-zA-Z0-9]")))
+                    {
+                        validWords << wordB;
+                    }
+                    else if (wordB.isEmpty() and wordA.size() >= 2 and wordA.contains(QRegExp("[a-zA-Z0-9]")))
+                    {
+                        validWords << wordA;
+                    }
+                    else if (not wordA.isEmpty() and not wordB.isEmpty())
+                    {
+                        if (alignedB.mid(wordStart, i - wordStart).count("$") < alignedA.mid(wordStart, i - wordStart).count("$"))
+                            validWords << wordB;
+                        else
+                            validWords << wordA;
+                    }
+                }
             }
-
 
             wordStart = i + 1;
         }
     }
 
-    return validWords.join(" ");
+    QString mergedText = validWords.join(" ");
+
+    mergedText = mergedText.replace(QRegExp(" </p>\\s+"), "</p>\n");
+
+    qDebug() << "-= Texte A =-\n" << alignedA;
+    qDebug() << "-= Texte B =-\n" << alignedB;
+
+    return mergedText;
 }
 
 //------------------------------------------------------------------------------
@@ -267,25 +409,44 @@ void Corrector::replaceAll(QTextDocument* document, QRegExp before, QString afte
 }
 
 //------------------------------------------------------------------------------
-//  Corrector::_getHighlightFormat()
+//  Corrector::retrieveCandidates()
 //------------------------------------------------------------------------------
-QTextCharFormat Corrector::_getHighlightFormat(const QTextCharFormat format, const QColor color)
+QStringList Corrector::retrieveCandidates(const QString str)
 {
-    QTextCharFormat hlFormat = format;
+    QStringList candidates;
 
-    if (_highlightStyle == 0)
+    if (_dicNouns != 0)
     {
-        hlFormat.setUnderlineStyle(QTextCharFormat::SingleUnderline);
-        hlFormat.setUnderlineColor(color);
-    }
-    else if (_highlightStyle == 1)
-    {
-        hlFormat.setBackground(QBrush(color));
+        QStringList words = _dicNouns->getWords();
+
+        QStringList queryGrams = _generateNGrams(str, 3);
+
+        int max = 0;
+        QString best = "";
+
+        for (int i = 0; i < words.size(); i++)
+        {
+            if (words[i].size() < str.size() * 2)
+            {
+                QStringList targetGrams = _generateNGrams(words[i], 3);
+                targetGrams.removeDuplicates();
+
+                int duplicates = (queryGrams + targetGrams).removeDuplicates();
+
+                if (duplicates > max)
+                {
+                    max = duplicates;
+                    best = words[i];
+                }
+
+                if (duplicates > 0.4 * queryGrams.size())
+                    candidates << words[i];
+            }
+        }
     }
 
-    return hlFormat;
+    return candidates;
 }
-
 
 //------------------------------------------------------------------------------
 //  Corrector::setColors()
@@ -308,12 +469,13 @@ void Corrector::setHighlightStyle(int highlightStyle)
 
 
 
+
+
 //------------------------------------------------------------------------------
 //  Corrector::_correctWord()
 //------------------------------------------------------------------------------
 bool Corrector::_correctWord(QTextCursor& cursor)
 {
-    bool corrected = false;
     QString str = cursor.selectedText();
 
     if (not str.isNull())
@@ -331,12 +493,90 @@ bool Corrector::_correctWord(QTextCursor& cursor)
             {
                 _highlight(cursor, _colors[1]);
                 cursor.insertText(correction, cursor.charFormat());
-                corrected = true;
+                return true;
+            }
+        }
+        else
+        {
+            QString correction = _tryInsertHyphen(str);
+
+            if (not correction.isEmpty())
+            {
+                _highlight(cursor, _colors[1]);
+                cursor.insertText(correction, cursor.charFormat());
+                return true;
+            }
+            else
+            {
+                const QRegExp APOSTROPHE = QRegExp("['’]");
+
+                if (str.count(APOSTROPHE) == 1)
+                {
+                    QStringList parts = str.split(APOSTROPHE);
+
+                    if (_apostrophePrefixes.contains(parts[0]))
+                    {
+                        correction = findSimilarWord(parts[1]);
+
+                        if (not correction.isEmpty())
+                        {
+                            correction = parts[0] + "'" + correction;
+
+                            _highlight(cursor, _colors[1]);
+                            cursor.insertText(correction, cursor.charFormat());
+                            return true;
+                        }
+                    }
+                }
+
+                correction = findSimilarWord(str);
+
+                if (not correction.isEmpty())
+                {
+                    _highlight(cursor, _colors[1]);
+                    cursor.insertText(correction, cursor.charFormat());
+                    return true;
+                }
             }
         }
     }
 
-    return corrected;
+    return false;
+}
+
+//------------------------------------------------------------------------------
+//  Corrector::_generateNGrams()
+//------------------------------------------------------------------------------
+QStringList Corrector::_generateNGrams(const QString str, const int n)
+{
+    QString query = "#" + str + "#";
+
+    QStringList grams;
+
+    for (int i = 0; i < query.size() - n; i++)
+        grams << query.mid(i, n);
+
+    return grams;
+}
+
+//------------------------------------------------------------------------------
+//  Corrector::_getHighlightFormat()
+//------------------------------------------------------------------------------
+QTextCharFormat Corrector::_getHighlightFormat(const QTextCharFormat format, const QColor color)
+{
+    QTextCharFormat hlFormat = format;
+
+    if (_highlightStyle == 0)
+    {
+        hlFormat.setUnderlineStyle(QTextCharFormat::SingleUnderline);
+        hlFormat.setUnderlineColor(color);
+    }
+    else if (_highlightStyle == 1)
+    {
+        hlFormat.setBackground(QBrush(color));
+    }
+
+    return hlFormat;
 }
 
 //------------------------------------------------------------------------------
@@ -360,31 +600,11 @@ void Corrector::_highlight(QTextCursor& cursor, const QColor color)
 }
 
 //------------------------------------------------------------------------------
-//  Corrector::_isValidWithApostrophe()
+//  Corrector::_isAlphaNum()
 //------------------------------------------------------------------------------
 bool Corrector::_isAlphaNum(const QString str)
 {
     return str.contains(QRegExp("[a-zA-Z0-9]"));
-}
-
-//------------------------------------------------------------------------------
-//  Corrector::isValid()
-//------------------------------------------------------------------------------
-bool Corrector::isValid(const QString str)
-{
-    if (_dicNouns != 0)
-    {
-        if (_dicNouns->search(str.toLower()) != -1)
-            return true;
-        else if (_dicNames != 0 and _dicNames->search(str) != -1)
-            return true;
-        else if (_isValidWithApostrophe(str))
-            return true;
-        else if (str == "—" or _doublePonctuation.contains(str))
-            return true;
-    }
-
-    return false;
 }
 
 //------------------------------------------------------------------------------
@@ -393,13 +613,13 @@ bool Corrector::isValid(const QString str)
 bool Corrector::_isValidWithApostrophe(const QString str)
 {
     const QRegExp APOSTROPHE = QRegExp("['’]");
-
     bool valid = false;
+
     if (str.count(APOSTROPHE) == 1)
     {
         QStringList parts = str.split(APOSTROPHE);
 
-        if (_apostrophePrefixes.contains(parts[0], Qt::CaseInsensitive))
+        if (_apostrophePrefixes.contains(parts[0]))
         {
             if (_dicNouns != 0 and _dicNouns->search(parts[1]) != -1)
                 valid = true;
@@ -439,7 +659,7 @@ void Corrector::_removePageNumber(QTextDocument* document)
 }
 
 //------------------------------------------------------------------------------
-//  Corrector::_removePageNumber()
+//  Corrector::_removePunctuationInsideWords()
 //------------------------------------------------------------------------------
 void Corrector::_removePunctuationInsideWords(QTextDocument* document, bool highlight)
 {
@@ -476,3 +696,38 @@ void Corrector::_removePunctuationInsideWords(QTextDocument* document, bool high
     }
 }
 
+//------------------------------------------------------------------------------
+//  Corrector::_tryInsertHyphen()
+//------------------------------------------------------------------------------
+QString Corrector::_tryInsertHyphen(const QString str)
+{
+    for (int i = 1; i < str.size() - 1; i++)
+    {
+        QString newString = str.mid(0, i) + "-" + str.mid(i);
+
+        if (_dicNouns != 0 and _dicNouns->search(newString) != -1)
+            return newString;
+    }
+
+    return QString();
+}
+
+//------------------------------------------------------------------------------
+//  Corrector::_tryInsertSpace()
+//------------------------------------------------------------------------------
+QString Corrector::_tryInsertSpace(const QString str)
+{
+    for (int i = 1; i < str.size() - 1; i++)
+    {
+        QString newString1 = str.mid(0, i);
+        QString newString2 = str.mid(i);
+
+        if (_dicNouns != 0)
+        {
+            if (_dicNouns->search(newString1) != -1 and _dicNouns->search(newString2) != -1)
+                return newString1 + " " + newString2;
+        }
+    }
+
+    return QString();
+}

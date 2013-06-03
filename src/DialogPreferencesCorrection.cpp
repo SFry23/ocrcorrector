@@ -49,16 +49,18 @@ DialogPreferencesCorrection::DialogPreferencesCorrection(QWidget* parent)
 
     QGridLayout* gridLayout = new QGridLayout(groupBox12);
 
-    QStringList labels = (QStringList() << tr("Erreur") << tr("Erreur corrigée") << tr("Remplacement automatique"));
+    QStringList labels = (QStringList() << tr("Erreur")
+                                        << tr("Erreur corrigée")
+                                        << tr("Remplacement automatique"));
 
     for (int i = 0; i < _colors.size(); i++)
     {
         QLabel* label = new QLabel(labels[i] + " : ");
 
-        PushButtonColor* button = new PushButtonColor(_colors[i], this);
+        PushButtonColor* button = new PushButtonColor(this);
         button->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         button->setId(i);
-        button->colorize();
+        button->colorize(_colors[i]);
         connect(button, SIGNAL(clicked(const QColor&)), this, SLOT(chooseColor(const QColor&)));
 
         gridLayout->addWidget(label, i, 0);
@@ -176,8 +178,7 @@ void DialogPreferencesCorrection::chooseColor(const QColor& oldColor)
     if (color.isValid())
     {
         _colors[emitter->getId()] = color;
-        emitter->setColor(color);
-        emitter->colorize();
+        emitter->colorize(color);
     }
 }
 

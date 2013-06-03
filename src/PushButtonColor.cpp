@@ -2,7 +2,6 @@
 
 
 
-
 //------------------------------------------------------------------------------
 //  PushButtonColor::PushButtonColor()
 //------------------------------------------------------------------------------
@@ -23,13 +22,11 @@ PushButtonColor::PushButtonColor(const QColor& color, QWidget* parent) : QPushBu
 //------------------------------------------------------------------------------
 //  PushButtonColor::colorize()
 //------------------------------------------------------------------------------
-void PushButtonColor::colorize()
+void PushButtonColor::colorize(const QColor color)
 {
-    if (_color.isValid())
-    {
-        QString rgbColor = QString("rgb(%1, %2, %3)").arg(_color.red()).arg(_color.green()).arg(_color.blue());
-        setStyleSheet(QString("border: none; background-color: %1;").arg(rgbColor));
-    }
+    setColor(color);
+    QString rgbColor = QString("rgb(%1, %2, %3)").arg(_color.red()).arg(_color.green()).arg(_color.blue());
+    setStyleSheet(QString("border: none; background-color: %1;").arg(rgbColor));
 }
 
 //------------------------------------------------------------------------------
@@ -49,23 +46,6 @@ int PushButtonColor::getId()
 }
 
 //------------------------------------------------------------------------------
-//  PushButtonColor::setColor()
-//------------------------------------------------------------------------------
-void PushButtonColor::setColor(QColor color)
-{
-    _color = color;
-}
-
-//------------------------------------------------------------------------------
-//  PushButtonColor::setId()
-//------------------------------------------------------------------------------
-void PushButtonColor::setId(int id)
-{
-    _id = id;
-}
-
-
-//------------------------------------------------------------------------------
 //  PushButtonColor::reemitClicked()
 //------------------------------------------------------------------------------
 void PushButtonColor::reemitClicked()
@@ -73,7 +53,20 @@ void PushButtonColor::reemitClicked()
     emit clicked(_color);
 }
 
+//------------------------------------------------------------------------------
+//  PushButtonColor::setColor()
+//------------------------------------------------------------------------------
+void PushButtonColor::setColor(const QColor color)
+{
+    if (color.isValid())
+        _color = color;
+}
 
-
-
+//------------------------------------------------------------------------------
+//  PushButtonColor::setId()
+//------------------------------------------------------------------------------
+void PushButtonColor::setId(const int id)
+{
+    _id = id;
+}
 

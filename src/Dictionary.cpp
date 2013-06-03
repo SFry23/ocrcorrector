@@ -49,24 +49,32 @@ QString Dictionary::getPath()
 }
 
 //------------------------------------------------------------------------------
+//  Dictionary::getWords()
+//------------------------------------------------------------------------------
+QStringList Dictionary::getWords()
+{
+    return _words;
+}
+
+//------------------------------------------------------------------------------
 //  Dictionary::load()
 //------------------------------------------------------------------------------
 bool Dictionary::load()
 {
     QFile file(_path);
-    if (file.open(QFile::ReadOnly))
+
+    bool isSuccess = file.open(QFile::ReadOnly);
+
+    if (isSuccess)
     {
         _words.clear();
         QTextStream content(&file);
+
         while (not content.atEnd())
             _words.append(content.readLine());
+    }
 
-        return true;
-    }
-    else
-    {
-        return false;
-    }
+    return isSuccess;
 }
 
 //------------------------------------------------------------------------------
@@ -77,13 +85,12 @@ bool Dictionary::remove(const QString s)
     QStringList::const_iterator it = qLowerBound(_words, s);
     int i = it - _words.begin();
 
-    if (_words.at(i) != s)
-        return false;
-    else
-    {
+    bool isPresent = (_words.at(i) == s);
+
+    if (isPresent)
         _words.removeAt(i);
-        return true;
-    }
+
+    return isPresent;
 }
 
 //------------------------------------------------------------------------------
@@ -121,15 +128,17 @@ bool Dictionary::save(const QString f)
 //------------------------------------------------------------------------------
 int Dictionary::search(const QString value)
 {
+    int position = -1;
+
     if (not _words.empty())
     {
         QStringList::const_iterator i = qBinaryFind(_words, value);
 
         if (i != _words.end())
-            return (i - _words.begin());
+            position = i - _words.begin();
     }
 
-    return -1;
+    return position;
 }
 
 //------------------------------------------------------------------------------
@@ -147,8 +156,6 @@ void Dictionary::set(QStringList l)
 void Dictionary::setPath(const QString filename)
 {
     if (not filename.isEmpty())
-    {
         _path = filename;
-    }
 }
 

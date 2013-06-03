@@ -15,7 +15,7 @@ SubstitutionMatrix::SubstitutionMatrix() : FileArray<double>()
 SubstitutionMatrix::SubstitutionMatrix(int size) : FileArray<double>(size, size)
 {
     for (int i = 0; i < size; i++)
-        at(i, i) = 5;
+        at(i, i) = 1;
 
     _freq.resize(size, 0);
 }

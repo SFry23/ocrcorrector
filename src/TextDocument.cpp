@@ -93,7 +93,8 @@ void TextDocument::loadContent()
 {
     if (open(QIODevice::ReadOnly))
     {
-        _currentDocument->setHtml((QTextStream(this).readAll()));
+        QTextStream stream(this);
+        _currentDocument->setHtml(QString(stream.readAll()));
         close();
     }
 }

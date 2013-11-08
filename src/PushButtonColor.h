@@ -4,6 +4,7 @@
 
 #include <QtCore>
 #include <QtGui>
+#include <QPushButton>
 
 
 class PushButtonColor : public QPushButton

@@ -5,7 +5,7 @@
 #include "SubstitutionMatrix.h"
 
 
-/** Alignment of two strings result */
+/** Alignment of two strings */
 class QAlignment
 {
     // Constructor and Destructor

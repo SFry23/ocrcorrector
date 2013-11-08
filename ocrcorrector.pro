@@ -5,8 +5,8 @@
 
 TEMPLATE = app
 TARGET = ocrcorrector
-DEPENDPATH += . lang src
-INCLUDEPATH += . src
+DEPENDPATH += . "lang" "src"
+INCLUDEPATH += "src"
 
 RESOURCES = ocrcorrector.qrc
 TRANSLATIONS += ocrcorrector_en.ts
@@ -16,34 +16,35 @@ dic.files = dic/*
 
 INSTALLS += dic
 
+QT += widgets
 
 # Input
-HEADERS += Array.h \
-           Config.h \
-           Corrector.h \
-           DialogPreferencesCorrection.h \
-           DialogPreferencesOcr.h \
-           Dictionary.h \
-           DocumentList.h \
-           FileArray.h \
-           OCR.h \
-           OCRcorrector.h \
-           PushButtonColor.h \
-           QStringHtml.h \
-           SubstitutionMatrix.h \
-           TextDocument.h \
-           Utils.h
-SOURCES += Corrector.cpp \
-           DialogPreferencesCorrection.cpp \
-           DialogPreferencesOcr.cpp \
-           Dictionary.cpp \
-           DocumentList.cpp \
-           main.cpp \
-           OCR.cpp \
-           OCRcorrector.cpp \
-           PushButtonColor.cpp \
-           QStringHtml.cpp \
-           SubstitutionMatrix.cpp \
-           TextDocument.cpp \
-           Utils.cpp
+HEADERS += src/Array.h \
+           src/Config.h \
+           src/Corrector.h \
+           src/DialogPreferencesCorrection.h \
+           src/DialogPreferencesOcr.h \
+           src/Dictionary.h \
+           src/DocumentList.h \
+           src/FileArray.h \
+           src/OCR.h \
+           src/OCRcorrector.h \
+           src/PushButtonColor.h \
+           src/QStringHtml.h \
+           src/SubstitutionMatrix.h \
+           src/TextDocument.h \
+           src/Utils.h
+SOURCES += src/Corrector.cpp \
+           src/DialogPreferencesCorrection.cpp \
+           src/DialogPreferencesOcr.cpp \
+           src/Dictionary.cpp \
+           src/DocumentList.cpp \
+           src/main.cpp \
+           src/OCR.cpp \
+           src/OCRcorrector.cpp \
+           src/PushButtonColor.cpp \
+           src/QStringHtml.cpp \
+           src/SubstitutionMatrix.cpp \
+           src/TextDocument.cpp \
+           src/Utils.cpp
 

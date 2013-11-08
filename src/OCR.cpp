@@ -181,11 +181,11 @@ QString OCR::_generateCommand(QString inFilename, QString outFilename)
             {
                 return QString("%1 \"%2\" \"%3\" -l %4 hocr").arg(OCR::TESSERACT_CMD, inFilename, outName, languageCode);
             }
-            else if (_engine == BOTH)
-            {
-                QString cmdTesseract = QString("%1 \"%2\" \"%3\" -l %4 hocr").arg(OCR::TESSERACT_CMD, inFilename, outName + "-tess", languageCode);
-                QString cmdCuneiform = QString("%1 \"%2\" -o \"%3\" -l %4 -f %5").arg(OCR::CUNEIFORM_CMD, inFilename, outName + "-cuneiform.html", languageCode, _format);
-            }
+            //~ else if (_engine == BOTH)
+            //~ {
+                //~ QString cmdTesseract = QString("%1 \"%2\" \"%3\" -l %4 hocr").arg(OCR::TESSERACT_CMD, inFilename, outName + "-tess", languageCode);
+                //~ QString cmdCuneiform = QString("%1 \"%2\" -o \"%3\" -l %4 -f %5").arg(OCR::CUNEIFORM_CMD, inFilename, outName + "-cuneiform.html", languageCode, _format);
+            //~ }
         }
     }
 

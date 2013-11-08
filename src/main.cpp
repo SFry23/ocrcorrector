@@ -1,5 +1,5 @@
-//~ #include <QtCore>
-#include <QtGui>
+#include <QTextCodec>
+#include <QApplication>
 
 #include "OCRcorrector.h"
 #include "Resources.h"
@@ -19,9 +19,9 @@ int main(int argc, char* argv[])
     QApplication app(argc, argv);
 
     // Use UTF-8
-    QTextCodec::setCodecForTr(QTextCodec::codecForName("UTF-8"));
+    //~ QTextCodec::setCodecForTr(QTextCodec::codecForName("UTF-8"));
     QTextCodec::setCodecForLocale(QTextCodec::codecForName("UTF-8"));
-    QTextCodec::setCodecForCStrings(QTextCodec::codecForName("UTF-8"));
+    //~ QTextCodec::setCodecForCStrings(QTextCodec::codecForName("UTF-8"));
 
     // Personnal translator
     QString locale = QLocale::system().name().section("_", 0, 0);

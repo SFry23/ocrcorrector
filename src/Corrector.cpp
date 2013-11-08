@@ -1,6 +1,7 @@
 #include "Corrector.h"
 
 
+
 //------------------------------------------------------------------------------
 //  Corrector::Corrector()
 //------------------------------------------------------------------------------
@@ -241,20 +242,108 @@ bool Corrector::isValid(const QString str)
     return false;
 }
 
+
+//
+//          TMP
+//
+void debug_print_alignment(QString A, QString B)
+{
+    int l = A.size();
+    if (A.size() < B.size())
+        l = B.size();
+
+    int colSize = 120;
+
+    for (int i = 0; i < l; i += colSize)
+    {
+        qDebug() << QString("A :") + A.replace("\n", "").mid(i, colSize);
+        qDebug() << QString("B :") + B.replace("\n", "").mid(i, colSize);
+    }
+}
+
+QString saveItalic(const QString text, QList<QPair<int, int> > &positions)
+{
+    QStringList words = text.split(" ");
+
+    int curr_pos = -1;
+    int start = 0;
+
+    for (int i = 0; i < words.size(); i++)
+    {
+        if (words[i] == "<i>")
+        {
+            start = curr_pos;
+        }
+        else if (words[i] == "</i>")
+        {
+            positions.append(QPair<int, int>(start, curr_pos));
+        }
+        else
+        {
+            curr_pos += words[i].size() + 1;
+        }
+    }
+
+    QString noItalicText = text;
+
+    noItalicText.replace("<i>", "").replace("</i>", "");
+
+    return noItalicText;
+}
+
+QString restoreItalic(const QString text, const QList<QPair<int, int> > positions)
+{
+    QString htmlText = QString(text);
+
+    int offset = 0, htmlOffset = 0, j = 0;
+
+    for (int i = 0; i < text.size(); i++)
+    {
+        if (j < positions.size() and i + offset == positions[j].first)
+        {
+            htmlText = htmlText.insert(i + offset + htmlOffset, "<i>");
+            htmlOffset += 3;
+        }
+        else if (j < positions.size() and  i + offset == positions[j].second)
+        {
+            htmlText = htmlText.insert(i + offset + htmlOffset, "</i>");
+            htmlOffset += 4;
+            j++;
+        }
+    }
+
+    return htmlText;
+}
+
 //------------------------------------------------------------------------------
 //  Corrector::mergeOCRizedTexts()
 //------------------------------------------------------------------------------
 QString Corrector::mergeOCRizedTexts(const QString strA, const QString strB)
 {
+    // Remove Italic
+    QString noItalicA, noItalicB;
+    QList<QPair<int, int> > italicPositionsA, italicPositionsB;
+
+    noItalicA = saveItalic(strA, italicPositionsA);
+    noItalicB = saveItalic(strB, italicPositionsB);
+
     // Align strings
-    QLevenshtein aligner(strA, strB);
+    QLevenshtein aligner(noItalicA, noItalicB);
     QAlignment alignment = aligner.align();
 
     QString alignedA = alignment.getStringA();
     QString alignedB = alignment.getStringB();
 
 
+    qDebug() << strA;
+    qDebug() << strB;
+    debug_print_alignment(alignedA, alignedB);
+
+
+
+    // -------------------------------------------------------------------------
     // Remove noise
+    // -------------------------------------------------------------------------
     QStringList regexps;
 
     // Remove '$' char at the begining of the first paragraph
@@ -289,8 +378,9 @@ QString Corrector::mergeOCRizedTexts(const QString strA, const QString strB)
         }
     }
 
-
+    // -------------------------------------------------------------------------
     // Merge
+    // -------------------------------------------------------------------------
     QStringList validWords;
 
     int wordStart = 0;
@@ -308,11 +398,43 @@ QString Corrector::mergeOCRizedTexts(const QString strA, const QString strB)
             }
             else
             {
-                QString wordA_clean = QString(wordA).replace(QRegExp("[\\.\\?!,]"), "");
-                QString wordB_clean = QString(wordB).replace(QRegExp("[\\.\\?!,]"), "");
+                // TODO : fixme
+                // New lines
+                //~ qDebug() << "wordA: " + wordA;
+                //~ qDebug() << "wordB: " + wordB;
+                //~ qDebug() << "";
 
-                bool wordAExists = isValid(wordA_clean) or wordA == "<i>" or wordA == "</i>";
-                bool wordBExists = isValid(wordB_clean) or wordB == "<i>" or wordB == "</i>";
+                //~ if (wordA == "</p>" or wordB == "</p>")
+                //~ {
+                    //~ if (validWords.last().right(1) == "." ||
+                        //~ validWords.last().right(1) == "!" ||
+                        //~ validWords.last().right(1) == "?" ||
+                        //~ validWords.last().right(1) == ">" )
+                    //~ {
+                        //~ qDebug() << validWords.last();
+                        //~ validWords << "</p>";
+                        //~ continue;
+                    //~ }
+                    //~ else
+                    //~ {
+                        //~ qDebug() << "not signif";
+                        //~ validWords << "----";
+                        //~ continue;
+                    //~ }
+                //~ }
+                //~ if (wordA == "<p>" or wordB == "<p>")
+                //~ {
+                    //~ qDebug() << "not signif";
+                    //~ qDebug() << "----";
+                    //~ continue;
+                //~ }
+
+
+                QString wordA_clean = QString(wordA).replace(QRegExp("[\\.\\?!,]$"), "");
+                QString wordB_clean = QString(wordB).replace(QRegExp("[\\.\\?!,]$"), "");
+
+                bool wordAExists = isValid(wordA_clean);
+                bool wordBExists = isValid(wordB_clean);
 
                 qDebug() << wordA_clean << ":" << wordAExists << " " << wordB_clean << ":" << wordBExists;
 
@@ -355,8 +477,12 @@ QString Corrector::mergeOCRizedTexts(const QString strA, const QString strB)
 
     mergedText = mergedText.replace(QRegExp(" </p>\\s+"), "</p>\n");
 
-    qDebug() << "-= Texte A =-\n" << alignedA;
-    qDebug() << "-= Texte B =-\n" << alignedB;
+    qDebug() << mergedText;
+
+    //~ mergedText = restoreItalic(mergedText, italicPositionsB);
+
+    //~ qDebug() << "restoreItalic";
+    //~ qDebug() << mergedText;
 
     return mergedText;
 }
@@ -477,71 +603,57 @@ void Corrector::setHighlightStyle(int highlightStyle)
 bool Corrector::_correctWord(QTextCursor& cursor)
 {
     QString str = cursor.selectedText();
+    QString correction;
+    bool corrected = false;
 
     if (not str.isNull())
     {
+        // Remove non-words
         if (not _isAlphaNum(str) and not _doublePonctuation.contains(str))
-        {
             cursor.removeSelectedText();
-        }
-        // Phologramme -> l'hologramme
+
+        // Correct tesseract error with "l'" : Phologramme -> l'hologramme
         else if (str.startsWith("P"))
         {
             QString correction = str.replace(0, 1, "l’");
 
             if (_isValidWithApostrophe(correction))
-            {
-                _highlight(cursor, _colors[1]);
-                cursor.insertText(correction, cursor.charFormat());
-                return true;
-            }
+                corrected = true;
         }
         else
         {
-            QString correction = _tryInsertHyphen(str);
+            correction = _tryInsertHyphen(str);
+            corrected = not correction.isEmpty();
 
-            if (not correction.isEmpty())
+            if (not corrected)
             {
-                _highlight(cursor, _colors[1]);
-                cursor.insertText(correction, cursor.charFormat());
-                return true;
-            }
-            else
-            {
-                const QRegExp APOSTROPHE = QRegExp("['’]");
-
-                if (str.count(APOSTROPHE) == 1)
+                if (str.count(QRegExp("['’]")) == 1)
                 {
-                    QStringList parts = str.split(APOSTROPHE);
+                    QStringList parts = str.split(QRegExp("['’]"));
 
                     if (_apostrophePrefixes.contains(parts[0]))
                     {
                         correction = findSimilarWord(parts[1]);
-
-                        if (not correction.isEmpty())
-                        {
-                            correction = parts[0] + "'" + correction;
-
-                            _highlight(cursor, _colors[1]);
-                            cursor.insertText(correction, cursor.charFormat());
-                            return true;
-                        }
+                        corrected = not correction.isEmpty();
+                        correction = parts[0] + "'" + correction;
                     }
                 }
-
-                correction = findSimilarWord(str);
-
-                if (not correction.isEmpty())
+                else
                 {
-                    _highlight(cursor, _colors[1]);
-                    cursor.insertText(correction, cursor.charFormat());
-                    return true;
+                    correction = findSimilarWord(str);
+                    corrected = not correction.isEmpty();
                 }
             }
         }
+
+        if (corrected)
+        {
+            _highlight(cursor, _colors[1]);
+            cursor.insertText(correction, cursor.charFormat());
+        }
     }
 
-    return false;
+    return corrected;
 }
 
 //------------------------------------------------------------------------------
@@ -619,7 +731,7 @@ bool Corrector::_isValidWithApostrophe(const QString str)
     {
         QStringList parts = str.split(APOSTROPHE);
 
-        if (_apostrophePrefixes.contains(parts[0]))
+        if (_apostrophePrefixes.contains(parts[0].toLower()))
         {
             if (_dicNouns != 0 and _dicNouns->search(parts[1]) != -1)
                 valid = true;

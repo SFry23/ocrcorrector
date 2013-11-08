@@ -1,8 +1,20 @@
 #ifndef DialogPreferencesCorrection_h
 #define DialogPreferencesCorrection_h
 
-#include <QtCore>
-#include <QtGui>
+
+#include <QDialog>
+#include <QComboBox>
+#include <QLineEdit>
+#include <QTabWidget>
+#include <QGroupBox>
+#include <QLabel>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
+#include <QGridLayout>
+#include <QDialogButtonBox>
+#include <QFileDialog>
+#include <QColorDialog>
+
 
 #include "Config.h"
 #include "PushButtonColor.h"
@@ -16,7 +28,6 @@ extern QSharedPointer<Config> gConfig;
 class DialogPreferencesCorrection : public QDialog
 {
     Q_OBJECT;
-
 
     public:
         /** Constructor */
@@ -44,10 +55,10 @@ class DialogPreferencesCorrection : public QDialog
         /** Choose a color thanks to a dialog window */
         void chooseColor(const QColor&);
 
-        /** Choose a new dictionary for common nouns */
+        /** Set a new dictionary for common nouns */
         void chooseDicNouns();
 
-        /** Choose a new dictionary for names */
+        /** Set a new dictionary for proper names */
         void chooseDicNames();
 
     signals:

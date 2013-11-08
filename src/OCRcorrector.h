@@ -1,10 +1,20 @@
 #ifndef OCRCorrector_h
 #define OCRCorrector_h
 
-#include <QtGui>
-#include <QtCore>
+
 #include <QObject>
+#include <QTextEdit>
 #include <QTextCodec>
+#include <QScrollArea>
+#include <QSplitter>
+#include <QLabel>
+#include <QToolButton>
+#include <QPushButton>
+#include <QFontComboBox>
+#include <QHBoxLayout>
+#include <QHBoxLayout>
+#include <QMainWindow>
+
 
 // Config
 #include "Config.h"

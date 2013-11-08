@@ -1,8 +1,14 @@
 #ifndef DialogPreferencesOcr_h
 #define DialogPreferencesOcr_h
 
-#include <QtCore>
-#include <QtGui>
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QRadioButton>
+#include <QComboBox>
+#include <QGroupBox>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
+
 #include "Config.h"
 
 extern QSharedPointer<Config> gConfig;

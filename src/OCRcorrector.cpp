@@ -4,6 +4,16 @@
 #include "DialogPreferencesCorrection.h"
 #include "Utils.h"
 
+#include <QProgressBar>
+#include <QStatusBar>
+#include <QDesktopWidget>
+#include <QMessageBox>
+#include <QMenuBar>
+#include <QAction>
+#include <QMenu>
+#include <QApplication>
+#include <QToolButton>
+#include <QToolBar>
 
 
 //------------------------------------------------------------------------------
@@ -949,7 +959,7 @@ void MainWindow::insertChar()
                 //~ }
             //~ }
 //~
-            //~ S.save(std::string("src/dic/.tesseract-substitution.txt"));
+            //~ S.save(std::string("src/dic/.tesseract-substitutions.txt"));
         //~ }
 //~
         //~ // Back to normal cursor

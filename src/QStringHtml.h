@@ -40,8 +40,26 @@ class QStringHtml : public QString
         /** Simplify, clean and uniformize HTML */
         QStringHtml reformatHtml();
 
+        /** Remove bold parts */
+        QStringHtml removeBold();
+
+        /** Remove highlighting */
+        QStringHtml removeHighlight();
+
+        /** Remove italic parts */
+        QStringHtml removeItalic();
+
         /** Concatenate all HTML paragraphs into a single one */
         QStringHtml removeNewLineTags();
+
+        /** Remove spaces at the end of lines */
+        QStringHtml removeRightSpaces();
+
+        /** Remove underlined parts */
+        QStringHtml removeUnderline();
+
+        /** Replace meta tag with a standard one */
+        QStringHtml replaceMeta();
 
         /** Remove the first or the last consecutive HTML tags
          *
@@ -56,13 +74,6 @@ class QStringHtml : public QString
          *  @return A QString with the same content.
          */
         QString toQString();
-
-        QStringHtml removeBold();
-        QStringHtml removeHighlight();
-        QStringHtml removeItalic();
-        QStringHtml removeUnderline();
-        QStringHtml replaceMeta();
-        QStringHtml removeRightSpaces();
 };
 
 

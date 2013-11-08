@@ -17,7 +17,7 @@ class Corrector
 {
     /** Constructor and Destructor */
     public:
-        Corrector(DictionaryPtr dic, DictionaryPtr names=0);
+        Corrector(DictionaryPtr dic, DictionaryPtr names);
         ~Corrector();
 
     private:

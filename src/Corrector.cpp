@@ -340,13 +340,12 @@ QString Corrector::mergeOCRizedTexts(const QString strA, const QString strB)
     debug_print_alignment(alignedA, alignedB);
 
 
-
     // -------------------------------------------------------------------------
     // Remove noise
     // -------------------------------------------------------------------------
     QStringList regexps;
 
-    // Remove '$' char at the begining of the first paragraph
+    // Remove '$' chars at the begining of the first paragraph
     regexps << "<body [^>]*>[^<]*<p> (.?\\$+)";
 
     // Remove '$' char at the begining of the text, before the first paragraph
@@ -387,7 +386,7 @@ QString Corrector::mergeOCRizedTexts(const QString strA, const QString strB)
 
     for (int i = 0; i < alignedA.size(); i++)
     {
-        if (alignedA[i].isSpace() or alignedB[i].isSpace())
+        if (alignedA[i].isSpace() or alignedB[i].isSpace() or alignedA[i] == '\n' or alignedB[i] == '\n')
         {
             const QString wordA = alignedA.mid(wordStart, i - wordStart).replace("$", "");
             const QString wordB = alignedB.mid(wordStart, i - wordStart).replace("$", "");
@@ -398,73 +397,70 @@ QString Corrector::mergeOCRizedTexts(const QString strA, const QString strB)
             }
             else
             {
-                // TODO : fixme
                 // New lines
-                //~ qDebug() << "wordA: " + wordA;
-                //~ qDebug() << "wordB: " + wordB;
-                //~ qDebug() << "";
-
-                //~ if (wordA == "</p>" or wordB == "</p>")
-                //~ {
-                    //~ if (validWords.last().right(1) == "." ||
-                        //~ validWords.last().right(1) == "!" ||
-                        //~ validWords.last().right(1) == "?" ||
-                        //~ validWords.last().right(1) == ">" )
-                    //~ {
-                        //~ qDebug() << validWords.last();
-                        //~ validWords << "</p>";
-                        //~ continue;
-                    //~ }
-                    //~ else
-                    //~ {
-                        //~ qDebug() << "not signif";
-                        //~ validWords << "----";
-                        //~ continue;
-                    //~ }
-                //~ }
-                //~ if (wordA == "<p>" or wordB == "<p>")
-                //~ {
-                    //~ qDebug() << "not signif";
-                    //~ qDebug() << "----";
-                    //~ continue;
-                //~ }
-
-
-                QString wordA_clean = QString(wordA).replace(QRegExp("[\\.\\?!,]$"), "");
-                QString wordB_clean = QString(wordB).replace(QRegExp("[\\.\\?!,]$"), "");
-
-                bool wordAExists = isValid(wordA_clean);
-                bool wordBExists = isValid(wordB_clean);
-
-                qDebug() << wordA_clean << ":" << wordAExists << " " << wordB_clean << ":" << wordBExists;
-
-                if (wordAExists and not wordBExists)
-                    validWords << wordA;
-                else if (wordBExists and not wordAExists)
-                    validWords << wordB;
-                else if (wordAExists and wordBExists)
+                if (wordA == "</p>" or wordB == "</p>")
                 {
-                    if (wordA.contains(QRegExp("[A-Z0-9]")) and not wordB.contains(QRegExp("[A-Z0-9]")))
-                        validWords << wordB;
-                    else
-                        validWords << wordA;
+                    if (validWords.last().right(1) == "." or
+                        validWords.last().right(1) == "!" or
+                        validWords.last().right(1) == "?" or
+                        validWords.last().right(1) == ">" )
+                    {
+                        validWords << "</p>";
+                    }
                 }
-                else
+                else if (wordA != "<p>" and wordB != "<p>")
                 {
-                    if (wordA.isEmpty() and wordB.size() >= 2 and wordB.contains(QRegExp("[a-zA-Z0-9]")))
-                    {
-                        validWords << wordB;
-                    }
-                    else if (wordB.isEmpty() and wordA.size() >= 2 and wordA.contains(QRegExp("[a-zA-Z0-9]")))
-                    {
+                    QString wordA_clean = QString(wordA).replace(QRegExp("\\.{3}|[\\.\\?!,]$"), "");
+                    QString wordB_clean = QString(wordB).replace(QRegExp("\\.{3}|[\\.\\?!,]$"), "");
+
+                    bool wordAExists = isValid(wordA_clean) or _doublePonctuation.contains(wordA);
+                    bool wordBExists = isValid(wordB_clean) or _doublePonctuation.contains(wordB);
+
+                    qDebug() << wordA_clean << ":" << wordAExists << " " << wordB_clean << ":" << wordBExists;
+
+                    if (wordAExists and not wordBExists)
                         validWords << wordA;
-                    }
-                    else if (not wordA.isEmpty() and not wordB.isEmpty())
+                    else if (wordBExists and not wordAExists)
+                        validWords << wordB;
+                    else if (wordAExists and wordBExists)
                     {
-                        if (alignedB.mid(wordStart, i - wordStart).count("$") < alignedA.mid(wordStart, i - wordStart).count("$"))
+                        if (validWords.last().right(1) == "." or
+                            validWords.last().right(1) == "!" or
+                            validWords.last().right(1) == "?" or
+                            validWords.last().right(1) == ">" )
+                        {
+                            if (wordA[0].isUpper() and not wordB[0].isUpper())
+                                validWords << wordA;
+                            else if (wordB[0].isUpper() and not wordA[0].isUpper())
+                                validWords << wordB;
+                            else
+                                validWords << wordA;
+                        }
+                        //~ else
+                        //~ {
+                            //~ if (wordA.contains(QRegExp("[A-Z0-9]")) and not wordB.contains(QRegExp("[A-Z0-9]")))
+                                //~ validWords << wordA;
+                            //~ else
+                                //~ validWords << wordB;
+                        //~ }
+                    }
+                    else
+                    {
+                        if (wordA.isEmpty() and wordB.size() >= 2 and wordB.contains(QRegExp("[a-zA-Z0-9]")))
+                        {
                             validWords << wordB;
-                        else
+                        }
+                        else if (wordB.isEmpty() and wordA.size() >= 2 and wordA.contains(QRegExp("[a-zA-Z0-9]")))
+                        {
                             validWords << wordA;
+                        }
+                        else if (not wordA.isEmpty() and not wordB.isEmpty())
+                        {
+                            if (alignedB.mid(wordStart, i - wordStart).count("$") < alignedA.mid(wordStart, i - wordStart).count("$"))
+                                validWords << wordB;
+                            else
+                                validWords << wordA;
+                        }
                     }
                 }
             }
@@ -477,12 +473,9 @@ QString Corrector::mergeOCRizedTexts(const QString strA, const QString strB)
 
     mergedText = mergedText.replace(QRegExp(" </p>\\s+"), "</p>\n");
 
-    qDebug() << mergedText;
-
     //~ mergedText = restoreItalic(mergedText, italicPositionsB);
 
-    //~ qDebug() << "restoreItalic";
-    //~ qDebug() << mergedText;
+    qDebug() << mergedText;
 
     return mergedText;
 }

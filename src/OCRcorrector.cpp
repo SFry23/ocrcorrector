@@ -59,7 +59,7 @@ MainWindow::MainWindow() : QMainWindow()
 
     // Connections
     connect(_textEdit, SIGNAL(selectionChanged()), this, SLOT(refreshFontInformations()));
-    connect(_textEdit, SIGNAL(textChanged()), this, SLOT(setUnsaved()));
+    connect(_textEdit, SIGNAL(textChanged()), this, SLOT(refreshStatusBar()));
     connect(_textEdit, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(showContextMenu(const QPoint&)));
 
     connect(this, SIGNAL(imageChange()), this, SLOT(refreshImage()));
@@ -384,7 +384,7 @@ void MainWindow::createToolBar()
     fontbox->setCurrentFont(QFont(gConfig->font));
     toolbar->addWidget(fontbox);
     connect(fontbox, SIGNAL(currentIndexChanged(const QString)),
-            this, SLOT(setFont(const QString)));
+                                            this, SLOT(setFont(const QString)));
 
     // Font size selection
     sizebox = new QComboBox(this);
@@ -450,13 +450,6 @@ void MainWindow::createToolBar()
     toolbar->addWidget(align_justify);
     connect(align_justify, SIGNAL(clicked()), this, SLOT(alignJustify()));
 
-    // Learn from text
-    //~ _buttonLearnFromText = new QPushButton(toolbar);
-    //~ _buttonLearnFromText->setText(tr("Apprendre"));
-    //~ toolbar->addWidget(_buttonLearnFromText);
-    //~ _buttonLearnFromText->setEnabled(false);
-    //~ connect(_buttonLearnFromText, SIGNAL(clicked()), this, SLOT(learnFromText()));
-
     // Previous file
     prevButton = new QToolButton(toolbar);
     prevButton->setIcon(QIcon(":/arrow_left.png"));
@@ -477,7 +470,7 @@ void MainWindow::createToolBar()
 //------------------------------------------------------------------------------
 void MainWindow::deleteBrowseButton()
 {
-    if (_scrollArea->layout() != 0)
+    if (_scrollArea->layout())
     {
         _scrollArea->layout()->removeWidget(_browseButton);
         delete _browseButton;
@@ -529,26 +522,20 @@ void MainWindow::displayCurrentText()
 {
     TextDocument *textFile = _documents.getTextFile();
 
-    if (textFile != 0)
+    if (textFile)
     {
         QTextDocument* document = textFile->getCurrentDocument();
 
-        if (document == 0)
-        {
-            textFile->loadContent();
-        }
-        else
-        {
+        if (document)
             _textEdit->setDocument(document);
-        }
+        else
+            textFile->loadContent();
 
         if (textFile->isSaved())
-        {
             setSaved();
-        }
         else
         {
-            setUnsaved();
+            refreshStatusBar();
             textFile->setSaved(true);
         }
     }
@@ -607,10 +594,6 @@ void MainWindow::refreshMenu()
 //------------------------------------------------------------------------------
 void MainWindow::refreshToolbar()
 {
-    // Enable or disable 'Learn' button in the toolbar
-    //~ if (_documents.getTextFile() != 0)
-        //~ _buttonLearnFromText->setEnabled(not _documents.getTextFile()->getOCRText().isEmpty());
-
     // Enable or disable prevButton in the toolbar
     prevButton->setEnabled(_documents.hasPrevious(sdi->isChecked()));
 
@@ -765,7 +748,6 @@ void MainWindow::close()
         else
             _documents.clear();
 
-        // Unlock document
         _documents.setLocked(false);
 
         emit textChange();
@@ -781,14 +763,11 @@ void MainWindow::deleteFile()
 {
     TextDocument* file = _documents.getTextFile();
 
-    if (file != 0)
+    if (file)
     {
         if (confirmDelete())
         {
-            // Delete file
             file->remove();
-
-            // Close current document
             close();
         }
     }
@@ -799,17 +778,10 @@ void MainWindow::deleteFile()
 //------------------------------------------------------------------------------
 void MainWindow::displayAbout()
 {
-    // Title
-    QString title = tr("À propos d'") + APP_NAME;
-
-    // Version
-    QString version = tr("Version : ") + APP_VERSION;
-
-    // License
-    QString license = tr("Licence : ") + LICENSE;
-
-    // Contact
-    QString contact = tr("Contact : ") + APP_MAIL;
+    QString title   = tr("À propos d'") + APP_NAME;
+    QString version = tr("Version : ")  + APP_VERSION;
+    QString license = tr("Licence : ")  + LICENSE;
+    QString contact = tr("Contact : ")  + APP_MAIL;
 
     // Create dialog
     QString content = version + "\n" + license + "\n" + contact;
@@ -881,91 +853,6 @@ void MainWindow::insertChar()
     QAction *emiter = qobject_cast<QAction*>(sender());
     _textEdit->textCursor().insertText((emiter->text().split(" ")[0]));
 }
-
-//------------------------------------------------------------------------------
-//  MainWindow::learnFromText()
-//------------------------------------------------------------------------------
-//~ void MainWindow::learnFromText()
-//~ {
-    //~ // Compare texts
-    //~ TextDocument* textDoc = _documents.getTextFile();
-//~
-    //~ // Frequency matrix
-    //~ SubstitutionMatrix freqMatrix(200);
-//~
-    //~ if (textDoc != 0)
-    //~ {
-        //~ // 'Wait' cursor
-        //~ QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-//~
-        //~ QString wrongText = textDoc->getOcrText();
-        //~ QString wrightText = _textEdit->toPlainText();
-//~
-        //~ QLevenshtein aligner(wrongText, wrightText);
-//~
-        //~ QAlignment alignment = aligner.align();
-//~
-        //~ QString alignedA = alignment.getStringA();
-        //~ QString alignedB = alignment.getStringB();
-//~
-        //~ QString wordA, wordB;
-//~
-        //~ for (int i = 0; i < alignedA.size(); i++)
-        //~ {
-            //~ if (alignedA[i] == alignedB[i] and (alignedA[i] == ' ' or alignedA[i] == '\n'))
-            //~ {
-                //~ if (not wordA.isNull() and not wordB.isNull())
-                //~ {
-                    //~ if (wordA != wordB)
-                    //~ {
-                        //~ for (int j = 0; j < wordA.size(); j++)
-                        //~ {
-                            //~ int codeLetterA = charToNum(wordA[j]);
-                            //~ int codeLetterB = charToNum(wordB[j]);
-//~
-                            //~ if (codeLetterA > 0 and codeLetterB > 0)
-                            //~ {
-                                //~ if (codeLetterA < freqMatrix.sizeX() and codeLetterB < freqMatrix.sizeX())
-                                //~ {
-                                    //~ freqMatrix(codeLetterA, codeLetterB)++;
-                                    //~ freqMatrix.setFreq(codeLetterA, freqMatrix.getFreq(codeLetterA) + 1);
-                                    //~ freqMatrix.setFreq(codeLetterB, freqMatrix.getFreq(codeLetterB) + 1);
-                                //~ }
-                            //~ }
-                        //~ }
-//~
-                        //~ qDebug() << wordA << " " << wordB;
-                    //~ }
-                //~ }
-//~
-                //~ wordA = "";
-                //~ wordB = "";
-            //~ }
-            //~ else
-            //~ {
-                //~ wordA += alignedA[i];
-                //~ wordB += alignedB[i];
-            //~ }
-        //~ }
-//~
-        //~ SubstitutionMatrix S;
-        //~ if (S.read(std::string("src/dic/.tesseract-substitution.txt")))
-        //~ {
-            //~ for (int i = 0; i < freqMatrix.sizeX(); i++)
-            //~ {
-                //~ for (int j = 0; j < freqMatrix.sizeX(); j++)
-                //~ {
-                    //~ S.updateScore(i, j, freqMatrix(i, j), freqMatrix.getFreq(i), freqMatrix.getFreq(j));
-                //~ }
-            //~ }
-//~
-            //~ S.save(std::string("src/dic/.tesseract-substitutions.txt"));
-        //~ }
-//~
-        //~ // Back to normal cursor
-        //~ QApplication::restoreOverrideCursor();
-    //~ }
-//~ }
 
 //------------------------------------------------------------------------------
 //  MainWindow::mergeFiles()
@@ -1193,14 +1080,14 @@ void MainWindow::refreshUI()
 //------------------------------------------------------------------------------
 void MainWindow::reloadDictionaries()
 {
-    if (_dictionary != 0)
+    if (_dictionary)
     {
         _dictionary->save();
         _dictionary->setPath(gConfig->pathDic);
         _dictionary->load();
     }
 
-    if (_dictionaryNames != 0)
+    if (_dictionaryNames)
     {
         _dictionaryNames->save();
         _dictionaryNames->setPath(gConfig->pathDic);
@@ -1254,7 +1141,7 @@ void MainWindow::runGroupCorrection()
         corrector->setHighlightStyle(gConfig->highlightStyle);
 
 
-        if (corrector != 0)
+        if (corrector)
         {
             QTextDocument* document = _textEdit->document();
 
@@ -1614,18 +1501,6 @@ void MainWindow::setSaved()
 }
 
 //------------------------------------------------------------------------------
-//  MainWindow::setUnsaved()
-//------------------------------------------------------------------------------
-void MainWindow::setUnsaved()
-{
-    if (_textEdit->document() != 0)
-    {
-        _textEdit->document()->setModified(true);
-        refreshStatusBar();
-    }
-}
-
-//------------------------------------------------------------------------------
 //  MainWindow::setViewMdi()
 //------------------------------------------------------------------------------
 void MainWindow::setViewMdi()
@@ -1726,7 +1601,7 @@ void MainWindow::showContextMenu(const QPoint& position)
 //------------------------------------------------------------------------------
 void MainWindow::toLower()
 {
-    if (_textEdit != 0)
+    if (_textEdit)
     {
         QTextCursor cursor = _textEdit->textCursor();
         QString selection = cursor.selectedText();
@@ -1746,7 +1621,7 @@ void MainWindow::toLower()
 //------------------------------------------------------------------------------
 void MainWindow::toUpper()
 {
-    if (_textEdit != 0)
+    if (_textEdit)
     {
         QTextCursor cursor = _textEdit->textCursor();
         QString selection = cursor.selectedText();
@@ -1815,13 +1690,9 @@ QString MainWindow::_mergeTexts(DocumentList& documents)
                         flagMerge = MERGE_NO_SPACE;
                     }
                     else if (PONCTUATION.contains(newPart.right(1)))
-                    {
                         flagMerge = MERGE_SPACE;
-                    }
                     else
-                    {
                         flagMerge = NOT_MERGE;
-                    }
 
                     text += newPart;
                 }

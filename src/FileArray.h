@@ -1,5 +1,5 @@
-#ifndef FILEARRAY_H
-#define FILEARRAY_H
+#ifndef FileArray_H
+#define FileArray_H
 
 
 #include <iostream>

@@ -44,25 +44,6 @@
 
 #define TIME_MSG 2000
 
-/******************************************************************************/
-class Word
-{
-    public:
-        Word(QString str, bool isItalic, bool isNewLine);
-        ~Word();
-
-    private:
-        QString _str;
-        bool _italic;
-        bool _newLine;
-
-    public:
-        QString getString();
-        bool isItalic();
-        bool isNewLine();
-};
-/******************************************************************************/
-
 
 
 // Software Configuration
@@ -169,10 +150,7 @@ class MainWindow : public QMainWindow
         void exportODT();
 
         /** Insert a char at the current position in the textedit */
-        void insertChar();
-
-        /** Learn from correction*/
-        //~ void learnFromText();
+        void insertChar();;
 
         /** Merge text files */
         void mergeFiles();
@@ -236,9 +214,6 @@ class MainWindow : public QMainWindow
 
         /** Set current text document as 'saved' */
         void setSaved();
-
-        /** Set current text document as 'unsaved'*/
-        void setUnsaved();
 
         /** Set a multiple document view */
         void setViewMdi();

@@ -49,14 +49,13 @@ QString QAlignment::getStringB()
 //------------------------------------------------------------------------------
 //  QLevenshtein::QLevenshtein()
 //------------------------------------------------------------------------------
-QLevenshtein::QLevenshtein(QString strA, QString strB)
+QLevenshtein::QLevenshtein(QString strA, QString strB) : _S(300)
 {
     _strA = strA;
     _strB = strB;
     _gapOpeningPenalty = -1;
     _gapExtensionPenalty = -0.6;
     _gapSymbol = '$';
-    _S = SubstitutionMatrix(1000);
 }
 
 //------------------------------------------------------------------------------
@@ -182,10 +181,10 @@ FileArray<double> QLevenshtein::_createScoreMatrix()
             }
             else
             {
-                if (codeLetterA >= _S.sizeX() or codeLetterA < 0)
-                    qDebug() << "Warning : Unsupported char (" << _strA[i-1] << ") " << codeLetterA;
-                else if (codeLetterB >= _S.sizeX() or codeLetterB < 0)
-                    qDebug() << "Warning : Unsupported char (" << _strB[j-1] << ") " << codeLetterB;
+                //~ if (codeLetterA >= _S.sizeX() or codeLetterA < 0)
+                    //~ qDebug() << "Warning : Unsupported char (" << _strA[i-1] << ") " << codeLetterA;
+                //~ else if (codeLetterB >= _S.sizeX() or codeLetterB < 0)
+                    //~ qDebug() << "Warning : Unsupported char (" << _strB[j-1] << ") " << codeLetterB;
 
                 if (codeLetterA == codeLetterB)
                     choice1 += abs(_gapOpeningPenalty / 2);

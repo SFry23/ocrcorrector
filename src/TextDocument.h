@@ -2,8 +2,10 @@
 #define TextDocument_h
 
 
-#include <QtCore>
-#include <QtGui>
+#include <QFile>
+#include <QString>
+#include <QTextDocument>
+#include <QTextStream>
 
 
 

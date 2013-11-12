@@ -1,7 +1,7 @@
 #ifndef Utils_h
 #define Utils_h
 
-#include <QtCore>
+#include <QDebug>
 #include "SubstitutionMatrix.h"
 
 
@@ -45,8 +45,7 @@ class QLevenshtein
     private:
         SubstitutionMatrix _S;
         QString _strA, _strB;
-        double _gapOpeningPenalty;
-        double _gapExtensionPenalty;
+        double _gapOpeningPenalty, _gapExtensionPenalty;
         char _gapSymbol;
 
     // Methods

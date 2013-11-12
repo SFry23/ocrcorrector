@@ -1,13 +1,6 @@
 #include "SubstitutionMatrix.h"
-#include <QtCore>
 
 
-//-----------------------------------------------------------------------------
-//  SubstitutionMatrix::SubstitutionMatrix()
-//-----------------------------------------------------------------------------
-SubstitutionMatrix::SubstitutionMatrix() : FileArray<double>()
-{
-}
 
 //-----------------------------------------------------------------------------
 //  SubstitutionMatrix::SubstitutionMatrix()
@@ -65,76 +58,6 @@ void SubstitutionMatrix::updateScore(int i, int j, int nDeltaSubst, int nDeltai,
 
     // Calc new score
     setScore(i, j, nSubst + nDeltaSubst, _freq[i] + nDeltai, _freq[j] + nDeltaj);
-}
-
-//-----------------------------------------------------------------------------
-//  SubstitutionMatrix::read()
-//-----------------------------------------------------------------------------
-bool SubstitutionMatrix::read(std::string filename, char delim)
-{
-    std::ifstream f(filename.c_str());
-
-    if (f.is_open())
-    {
-        std::string line;
-        this->resize(0);
-
-        int lineNumber = 0;
-        while (std::getline(f, line) and line != "")
-        {
-            std::stringstream ss(line);
-
-            std::string token;
-            std::vector<std::string> tokens;
-
-            while (std::getline(ss, token, delim))
-                tokens.push_back(token);
-
-            if (sizeX() != (int) tokens.size())
-                resize(tokens.size());
-
-            for (int i = 0; i < sizeX(); i++)
-            {
-                double value;
-                std::stringstream ss(tokens[i]);
-
-                if (not (ss >> value))
-                    value = 0.0;
-
-                at(lineNumber, i) = value;
-            }
-            lineNumber++;
-        }
-
-        while (f.good())
-        {
-            // Skiped 1 empty line after matrix, read the important one
-            std::getline(f, line);
-
-            if (line != "")
-            {
-                std::stringstream ss(line);
-                std::string token;
-
-                for (int i = 0; i < sizeX(); i++)
-                {
-                    std::getline(ss, token, delim);
-
-                    double value = atof(token.c_str());
-                    _freq[i] = value;
-                }
-            }
-        }
-
-        f.close();
-
-        return true;
-    }
-    else
-    {
-        qDebug() << "Can't open " << filename.c_str();
-        return false;
-    }
 }
 
 bool SubstitutionMatrix::read(QString filename, char delim)
@@ -209,31 +132,6 @@ void SubstitutionMatrix::resize(int size)
     FileArray::resize(size, size);
 
     _freq.resize(size, 0);
-}
-
-//-----------------------------------------------------------------------------
-//  SubstitutionMatrix::save()
-//-----------------------------------------------------------------------------
-bool SubstitutionMatrix::save(std::string filename, char delim)
-{
-    FileArray::save(filename, delim);
-
-    // Add a row with frequency of each letter
-    std::ofstream f(filename.c_str(), std::ios::out | std::ios::app);
-
-    if (f.is_open())
-    {
-        f << "\n\n";
-        for (int i = 0; i < ((int) _freq.size()) - 1; i++)
-            f << _freq[i] << delim;
-        f << _freq.back() << std::endl;
-
-        f.close();
-
-        return true;
-    }
-
-    return false;
 }
 
 bool SubstitutionMatrix::save(QString filename, char delim)

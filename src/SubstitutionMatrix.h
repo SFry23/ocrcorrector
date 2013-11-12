@@ -1,11 +1,14 @@
-#ifndef SUBSTITUTIONMATRIX_H
-#define SUBSTITUTIONMATRIX_H
+#ifndef SubstitutionMatrix_H
+#define SubstitutionMatrix_H
 
-#include <QtCore>
+
 #include <cstdlib>
 #include <sstream>
 #include <math.h>
 #include <string>
+#include <QString>
+#include <QFile>
+#include <QTextStream>
 
 #include "FileArray.h"
 
@@ -15,7 +18,6 @@ class SubstitutionMatrix : public FileArray<double>
 {
     // Constructor and destructor
     public:
-        SubstitutionMatrix();
         SubstitutionMatrix(int size);
 
 
@@ -29,8 +31,8 @@ class SubstitutionMatrix : public FileArray<double>
     public:
         /** Calculate and set score from substitution frequency, i frequency and j frequency
          *
-         *  @param i ID of first item
-         *  @param j ID of second item
+         *  @param i ID of the first item
+         *  @param j ID of the second item
          *  @param nSubstitutions Number of substitutions from i to j
          *  @param ni Total number of i
          *  @param nj Total number of j
@@ -43,7 +45,6 @@ class SubstitutionMatrix : public FileArray<double>
         void updateScore(int i, int j, int nDeltaSubst, int nDeltai, int nDeltaj);
 
         /** Read a substitution matrix from a file */
-        bool read(std::string filename, char delim=' ');
         bool read(QString filename, char delim=' ');
 
         /** Resize substitution matrix */
@@ -56,7 +57,6 @@ class SubstitutionMatrix : public FileArray<double>
         int getFreq(int i);
 
         /** Save the substitution matrix in a file */
-        bool save(std::string filename, char delim=' ');
         bool save(QString filename, char delim=' ');
 
         /** Set frequency of an item */
@@ -66,6 +66,3 @@ class SubstitutionMatrix : public FileArray<double>
 
 
 #endif
-
-
-
